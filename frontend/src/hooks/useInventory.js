@@ -4,14 +4,14 @@ import { calculateStockStatus, getDefaultThresholds } from '../utils/stockStatus
 
 // Default exclusions
 const DEFAULT_EXCLUSIONS = [
-  'OATH-A1-TEST',
+  'SRG-A1-TEST',
   'a1 test',
-  'OATH-GH-FRAGMENT-176-191-5MG',
-  'OATH-GIFT-CARD',
+  'SRG-GH-FRAGMENT-176-191-5MG',
+  'SRG-GIFT-CARD',
   'gift card',
-  'OATH-NAD+-1000MG',
-  'OATH-SS-31-10MG',
-  'OATH-TESA-IPA-10-5'
+  'SRG-NAD+-1000MG',
+  'SRG-SS-31-10MG',
+  'SRG-TESA-IPA-10-5'
 ];
 
 // Helper function to check if a peptide should be excluded

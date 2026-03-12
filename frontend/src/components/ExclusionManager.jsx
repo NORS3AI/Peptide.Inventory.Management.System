@@ -4,14 +4,14 @@ import { db } from '../lib/db';
 
 // Default exclusions
 const DEFAULT_EXCLUSIONS = [
-  'OATH-A1-TEST',
+  'SRG-A1-TEST',
   'a1 test',
-  'OATH-GH-FRAGMENT-176-191-5MG',
-  'OATH-GIFT-CARD',
+  'SRG-GH-FRAGMENT-176-191-5MG',
+  'SRG-GIFT-CARD',
   'gift card',
-  'OATH-NAD+-1000MG',
-  'OATH-SS-31-10MG',
-  'OATH-TESA-IPA-10-5'
+  'SRG-NAD+-1000MG',
+  'SRG-SS-31-10MG',
+  'SRG-TESA-IPA-10-5'
 ];
 
 export default function ExclusionManager({ onUpdate, isOpen: controlledIsOpen, onClose }) {
@@ -169,7 +169,7 @@ export default function ExclusionManager({ onUpdate, isOpen: controlledIsOpen, o
                   value={newExclusion}
                   onChange={(e) => setNewExclusion(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Enter product ID or name (e.g., OATH-A1-TEST)"
+                  placeholder="Enter product ID or name (e.g., SRG-A1-TEST)"
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <button
@@ -182,7 +182,7 @@ export default function ExclusionManager({ onUpdate, isOpen: controlledIsOpen, o
                 </button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Tip: Matching is case-insensitive. "a1 test" will match "A1 Test", "OATH-A1-TEST", etc.
+                Tip: Matching is case-insensitive. "a1 test" will match "A1 Test", "SRG-A1-TEST", etc.
               </p>
             </div>
 

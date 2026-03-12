@@ -114,13 +114,13 @@ describe('csvParser', () => {
 
     it('should filter out excluded products (case-insensitive)', () => {
       const rawData = [
-        { 'Product': 'OATH-A1-TEST', 'SKU': 'Test Product' },
+        { 'Product': 'SRG-A1-TEST', 'SKU': 'Test Product' },
         { 'Product': 'srg-a1-test', 'SKU': 'Test Product Lower' },
-        { 'Product': 'OATH-GH-FRAGMENT-176-191-5MG', 'SKU': 'Fragment' },
+        { 'Product': 'SRG-GH-FRAGMENT-176-191-5MG', 'SKU': 'Fragment' },
         { 'Product': 'PT-001', 'SKU': 'Valid Product' }
       ];
 
-      const excludedProducts = ['OATH-A1-TEST', 'OATH-GH-FRAGMENT-176-191-5MG'];
+      const excludedProducts = ['SRG-A1-TEST', 'SRG-GH-FRAGMENT-176-191-5MG'];
       const result = transformPeptideData(rawData, { fieldMapping, excludedProducts });
 
       expect(result).toHaveLength(1);
