@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Oath Peptide Inventory System - Development Startup Script
+# SRG Peptide Inventory System - Development Startup Script
 # This script starts both the backend API server and frontend development server
 
 set -e
 
-echo "🚀 Starting Oath Peptide Inventory System..."
+echo "🚀 Starting SRG Peptide Inventory System..."
 echo ""
 
 # Check if backend dependencies are installed

@@ -1,4 +1,4 @@
-# Oath Peptide Inventory System - Deployment Guide
+# SRG Peptide Inventory System - Deployment Guide
 
 ## Critical Change: Backend Database Required
 
@@ -215,7 +215,7 @@ npm install -g pm2
 
 # Start backend
 cd backend
-pm2 start src/server.js --name oath-inventory-api
+pm2 start src/server.js --name srg-inventory-api
 
 # Save PM2 configuration
 pm2 save
@@ -232,7 +232,7 @@ server {
 
     # Frontend
     location / {
-        root /path/to/Oath-Inventory/frontend/dist;
+        root /path/to/SRG-Inventory/frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 

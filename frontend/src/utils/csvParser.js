@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 
 /**
- * CSV parsing utilities for Oath Inventory System
+ * CSV parsing utilities for SRG Inventory System
  * Handles parsing, validation, and transformation of inventory CSV files
  */
 

@@ -38,7 +38,7 @@ export default function Login({ onLoginSuccess }) {
             <Lock className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Oath Inventory System
+            SRG Inventory System
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Enter your password to continue
@@ -128,7 +128,7 @@ export default function Login({ onLoginSuccess }) {
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-gray-600 dark:text-gray-400">
-          <p>Oath Research Peptide Inventory Management System</p>
+          <p>SRG Peptide Inventory Management System</p>
           <p className="mt-1">Secure · Private · Permanent Storage</p>
         </div>
       </div>

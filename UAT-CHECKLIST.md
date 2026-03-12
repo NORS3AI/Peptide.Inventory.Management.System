@@ -2,12 +2,12 @@
 
 ## Overview
 
-This document provides a comprehensive checklist for performing User Acceptance Testing (UAT) on the Oath Research Peptide Inventory System. Complete all sections to ensure the system meets business requirements and user expectations.
+This document provides a comprehensive checklist for performing User Acceptance Testing (UAT) on the SRG Peptide Inventory System. Complete all sections to ensure the system meets business requirements and user expectations.
 
 **Testing Date**: _________________
 **Tester Name**: _________________
 **Browser/Device**: _________________
-**Test Environment**: https://nors3ai.github.io/Oath-Inventory/
+**Test Environment**: https://nors3ai.github.io/SRG-Inventory/
 
 ---
 
@@ -16,7 +16,7 @@ This document provides a comprehensive checklist for performing User Acceptance 
 - [ ] Application loads successfully
 - [ ] No console errors in browser developer tools
 - [ ] All navigation tabs are visible
-- [ ] Header displays "Oath Research" and "Peptide Inventory System"
+- [ ] Header displays "SRG" and "Peptide Inventory System"
 - [ ] Footer displays copyright notice
 - [ ] Version number (v1.0.0) is visible
 
@@ -310,7 +310,7 @@ Test with CSV containing these columns:
 ### 9.3 IndexedDB Verification
 - [ ] Open browser DevTools
 - [ ] Check Application > IndexedDB
-- [ ] Verify "oath-peptides" database exists
+- [ ] Verify "srg-peptides" database exists
 - [ ] Verify 4 stores exist (peptides, orders, labels, settings)
 - [ ] Verify data is stored correctly
 

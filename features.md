@@ -1,7 +1,7 @@
-# Oath Research Peptide Inventory System - Features
+# SRG Peptide Inventory System - Features
 
 ## Overview
-A comprehensive inventory management system for Oath Research, a peptide manufacturing company. The system manages peptide inventory, tracks lifecycle from ordering through testing to labeling, and provides visual indicators for stock levels and operational priorities.
+A comprehensive inventory management system for SRG, a peptide manufacturing company. The system manages peptide inventory, tracks lifecycle from ordering through testing to labeling, and provides visual indicators for stock levels and operational priorities.
 
 ---
 

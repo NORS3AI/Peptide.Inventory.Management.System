@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend API for Oath Peptide Inventory System",
+  "description": "Backend API for SRG Peptide Inventory System",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

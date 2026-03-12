@@ -115,7 +115,7 @@ describe('csvParser', () => {
     it('should filter out excluded products (case-insensitive)', () => {
       const rawData = [
         { 'Product': 'OATH-A1-TEST', 'SKU': 'Test Product' },
-        { 'Product': 'oath-a1-test', 'SKU': 'Test Product Lower' },
+        { 'Product': 'srg-a1-test', 'SKU': 'Test Product Lower' },
         { 'Product': 'OATH-GH-FRAGMENT-176-191-5MG', 'SKU': 'Fragment' },
         { 'Product': 'PT-001', 'SKU': 'Valid Product' }
       ];
