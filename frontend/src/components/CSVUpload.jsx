@@ -82,14 +82,14 @@ export default function CSVUpload({ onImportComplete }) {
     try {
       // Load exclusions from settings
       const excludedProducts = await db.settings.get('exclusions').catch(() => null) || [
-        'OATH-A1-TEST',
+        'SRG-A1-TEST',
         'a1 test',
-        'OATH-GH-FRAGMENT-176-191-5MG',
-        'OATH-GIFT-CARD',
+        'SRG-GH-FRAGMENT-176-191-5MG',
+        'SRG-GIFT-CARD',
         'gift card',
-        'OATH-NAD+-1000MG',
-        'OATH-SS-31-10MG',
-        'OATH-TESA-IPA-10-5'
+        'SRG-NAD+-1000MG',
+        'SRG-SS-31-10MG',
+        'SRG-TESA-IPA-10-5'
       ];
 
       // Parse CSV with exclusions
