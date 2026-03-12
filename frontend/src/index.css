@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  html, body {
+    @apply bg-gray-50 text-gray-900 min-h-screen;
+    overflow-x: hidden !important;
+    max-width: 100vw;
+    position: relative;
+  }
+
+  /* Prevent horizontal scrolling on all elements */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Allow specific elements to overflow */
+  nav, table, .overflow-x-auto {
+    max-width: none;
+  }
+
+  /* Constrain main container */
+  #root {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+  }
+
+  /* Navigation snap scrolling for mobile */
+  nav {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0;
+  }
+
+  /* Navigation items snap to position */
+  nav button {
+    scroll-snap-align: start;
+  }
+
+  /* Hide navigation scrollbar */
+  nav::-webkit-scrollbar {
+    display: none;
+    height: 0px;
+  }
+}
+
+@layer components {
+  /* Status badge styles */
+  .status-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .status-out-of-stock {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .status-nearly-out {
+    @apply bg-orange-100 text-orange-800 border border-orange-200;
+  }
+
+  .status-low-stock {
+    @apply bg-yellow-100 text-yellow-800 border border-yellow-200;
+  }
+
+  .status-good-stock {
+    @apply bg-green-100 text-green-800 border border-green-200;
+  }
+
+  .status-on-order {
+    @apply bg-teal-100 text-teal-800 border border-teal-200;
+  }
+
+  /* Toast animations */
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+}
+
+/* Print styles */
+@media print {
+  /* Page setup */
+  @page {
+    margin: 0.5in;
+    size: auto;
+  }
+
+  /* Reset body for print */
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide everything except the prices table container */
+  body > * {
+    display: none !important;
+  }
+
+  #root {
+    display: block !important;
+  }
+
+  #root > * {
+    display: none !important;
+  }
+
+  /* Show only the main content area with the table */
+  #root > div {
+    display: block !important;
+  }
+
+  #root > div > * {
+    display: none !important;
+  }
+
+  /* Show the prices content */
+  #root > div > div {
+    display: block !important;
+  }
+
+  /* Hide action buttons explicitly */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Show and format the table */
+  table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: white !important;
+    box-shadow: none !important;
+    position: static !important;
+    margin: 0 !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Repeat table headers on each page */
+  thead {
+    display: table-header-group !important;
+    background: #f9f9f9 !important;
+    font-weight: bold !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
+  }
+
+  /* Prevent page breaks inside rows */
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Clean table borders */
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  /* Ensure text is black */
+  th, td, span, div {
+    color: black !important;
+  }
+
+  /* Hide sort icons and interactive elements */
+  .lucide, button, input {
+    display: none !important;
+  }
+
+  /* Remove all backgrounds and shadows */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  th {
+    background: #f9f9f9 !important;
+  }
+
+  td {
+    background: white !important;
+  }
+}
