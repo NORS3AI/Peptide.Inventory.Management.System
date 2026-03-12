@@ -1,7 +1,7 @@
 // API client for backend communication with authentication
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-const TOKEN_KEY = 'oath_auth_token';
+const TOKEN_KEY = 'srg_auth_token';
 
 class ApiError extends Error {
   constructor(message, status) {

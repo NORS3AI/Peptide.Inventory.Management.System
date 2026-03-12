@@ -42,7 +42,7 @@ const PATCH_NOTES = [
   { version: '0.0.101', date: '2026-02-10', title: 'Add bulk edit modal for mass editing all peptides at once' },
   { version: '0.0.100', date: '2026-02-10', title: 'Update docs/ build to match IndexedDB-only frontend' },
   { version: '0.0.99', date: '2026-02-10', title: 'Revert frontend to IndexedDB storage, remove backend API/auth dependency' },
-  { version: '0.0.98', date: '2026-02-09', title: 'Claude/oath peptide inventory system merge (#36)' },
+  { version: '0.0.98', date: '2026-02-09', title: 'Claude/srg peptide inventory system merge (#36)' },
   { version: '0.0.97', date: '2026-02-09', title: 'Add comprehensive security documentation' },
   { version: '0.0.96', date: '2026-02-09', title: 'Add password authentication system (v0.0.100-alpha)' },
   { version: '0.0.95', date: '2026-02-09', title: 'Add deployment documentation and development startup script' },
@@ -313,7 +313,7 @@ export default function PatchNotesModal({ isOpen, onClose, currentVersion }) {
           <div className="text-center py-6 border-t border-gray-200 dark:border-gray-700">
             <div className="inline-flex items-center gap-2 text-sm text-gray-400 dark:text-gray-600">
               <Rocket className="w-4 h-4" />
-              <span>Oath Inventory System - Born Feb 6, 2026</span>
+              <span>SRG Inventory System - Born Feb 6, 2026</span>
             </div>
           </div>
         </div>

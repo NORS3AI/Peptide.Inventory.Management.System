@@ -179,7 +179,7 @@ export default function CSVUpload({ onImportComplete }) {
 
   const handleDownloadSample = () => {
     const sampleCSV = generateSampleCSV();
-    downloadCSV(sampleCSV, 'oath-inventory-sample.csv');
+    downloadCSV(sampleCSV, 'srg-inventory-sample.csv');
   };
 
   const clearResult = () => {

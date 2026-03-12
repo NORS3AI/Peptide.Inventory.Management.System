@@ -251,11 +251,11 @@ export default function Reports({ peptides, orders = [], thresholds }) {
 
   const handleExportInventory = () => {
     const csvContent = exportToCSV(peptides);
-    downloadCSV(csvContent, `oath-inventory-report-${new Date().toISOString().split('T')[0]}.csv`);
+    downloadCSV(csvContent, `srg-inventory-report-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleExportSummary = () => {
-    const summary = `Oath Research Inventory Summary Report
+    const summary = `SRG Inventory Summary Report
 Generated: ${new Date().toLocaleString()}
 
 === INVENTORY OVERVIEW ===
@@ -286,7 +286,7 @@ ${stats.needsAttention.map(p =>
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `oath-summary-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `srg-summary-${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };

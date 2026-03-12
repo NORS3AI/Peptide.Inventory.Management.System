@@ -265,7 +265,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
 
   const handleExport = () => {
     const csvContent = exportToCSV(peptidesWithStatus);
-    downloadCSV(csvContent, `oath-inventory-${new Date().toISOString().split('T')[0]}.csv`);
+    downloadCSV(csvContent, `srg-inventory-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   // Inline labeled count save

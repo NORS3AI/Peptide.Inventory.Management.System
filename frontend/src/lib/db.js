@@ -2,61 +2,61 @@ import localforage from 'localforage';
 
 // Initialize IndexedDB stores
 const peptideStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'peptides',
   description: 'Peptide inventory data'
 });
 
 const orderStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'orders',
   description: 'Peptide orders and lifecycle tracking'
 });
 
 const labelStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'labels',
   description: 'Label inventory and tracking'
 });
 
 const settingsStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'settings',
   description: 'Application settings and configuration'
 });
 
 const transactionStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'transactions',
   description: 'Sales and usage transactions for velocity tracking'
 });
 
 const velocityHistoryStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'velocityHistory',
   description: 'Historical velocity data for trend tracking'
 });
 
 const snapshotStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'snapshots',
   description: 'Daily inventory snapshots for comparison'
 });
 
 const taskStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'tasks',
   description: 'Daily and weekly task management with expiration dates'
 });
 
 const minutesStore = localforage.createInstance({
-  name: 'OathInventory',
+  name: 'SRGInventory',
   storeName: 'minutes',
   description: 'Team meeting minutes and action items'
 });
 
 /**
- * Database service for Oath Inventory System
+ * Database service for SRG Inventory System
  * Uses IndexedDB via localforage for client-side data persistence
  */
 export const db = {

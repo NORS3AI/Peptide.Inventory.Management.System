@@ -73,7 +73,7 @@ function App() {
             <div className="flex items-center space-x-3">
               <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Oath Research</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SRG</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Peptide Inventory System</p>
               </div>
             </div>
@@ -204,7 +204,7 @@ function App() {
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            © 2026 Oath Research. Peptide Inventory Management System.
+            © 2026 SRG. Peptide Inventory Management System.
           </p>
         </div>
       </footer>
@@ -527,7 +527,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">Getting Started</h3>
           <p className="text-blue-800 dark:text-blue-300 mb-4">
-            Welcome to the Oath Research Peptide Inventory System! To get started:
+            Welcome to the SRG Peptide Inventory System! To get started:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-300">
             <li>Import your inventory CSV file using the "Import CSV" tab</li>

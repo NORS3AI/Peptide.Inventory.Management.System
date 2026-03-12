@@ -1,5 +1,5 @@
 /**
- * Stock status utilities for Oath Inventory System
+ * Stock status utilities for SRG Inventory System
  * Determines color-coded status based on inventory levels
  */
 

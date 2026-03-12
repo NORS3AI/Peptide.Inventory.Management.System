@@ -1,7 +1,7 @@
-# CLAUDE.md - Oath Inventory System
+# CLAUDE.md - SRG Inventory System
 
 ## Project Overview
-Oath Research Peptide Inventory System — a client-side inventory management app for a peptide manufacturing company. Built with React 19 + Vite 7 + Tailwind CSS 3, deployed as a static site on GitHub Pages from the `docs/` folder.
+SRG Peptide Inventory System — a client-side inventory management app for a peptide manufacturing company. Built with React 19 + Vite 7 + Tailwind CSS 3, deployed as a static site on GitHub Pages from the `docs/` folder.
 
 ## Tech Stack
 - **Frontend**: React 19, Vite 7, Tailwind CSS 3
@@ -9,7 +9,7 @@ Oath Research Peptide Inventory System — a client-side inventory management ap
 - **Deployment**: GitHub Pages from `docs/` folder on `main` branch
 - **CSV Parsing**: PapaParse
 - **Icons**: lucide-react
-- **Repo**: `NORS3AI/Oath-Inventory` (local path `/home/user/Inventory-KIP`)
+- **Repo**: `NORS3AI/SRG-Inventory` (local path `/home/user/Inventory-KIP`)
 
 ## Build & Deploy
 ```bash
@@ -17,7 +17,7 @@ cd frontend && npm run build
 # Copy dist to docs for GitHub Pages
 rm -rf docs/* && cp -r frontend/dist/* docs/
 ```
-Vite base path is set to `/Oath-Inventory/` in vite.config.js.
+Vite base path is set to `/SRG-Inventory/` in vite.config.js.
 
 ## Agent Permissions
 - Auto-approve all file operations (Read, Write, Edit, Grep)
