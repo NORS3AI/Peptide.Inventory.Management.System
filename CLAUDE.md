@@ -38,7 +38,7 @@ Vite base path is set to `/SRG-Inventory/` in vite.config.js.
 
 ### Data Layer (`frontend/src/lib/db.js`)
 - All data persisted in IndexedDB via localforage
-- Stores: `peptides`, `orders`, `labels`, `settings`, `transactions`, `velocityHistory`, `snapshots`
+- Stores: `peptides`, `orders`, `labels`, `settings`, `transactions`, `velocityHistory`, `snapshots`, `tasks`, `minutes`
 - No backend API — everything is client-side
 
 ### Column Reorder/Hide Pattern
@@ -106,5 +106,8 @@ See `PatchNotesModal.jsx` for full patch history. Version tracked in `frontend/p
 - `frontend/src/components/PatchNotesModal.jsx` — Version history (tappable from version number)
 - `frontend/src/components/Toast.jsx` — Toast notification system
 - `frontend/src/components/ExclusionManager.jsx` — Product exclusion management
+- `frontend/src/components/Daily.jsx` — Daily/weekly task management with priority & expiration
+- `frontend/src/components/Minutes.jsx` — Password-protected team meeting minutes (password: 1337)
+- `frontend/src/components/RichTextEditor.jsx` — contentEditable rich text editor (bold, italic, lists, alignment)
 - `frontend/src/hooks/useInventory.js` — Main data loading hook
 - `frontend/src/hooks/useDarkMode.js` — Dark mode toggle
