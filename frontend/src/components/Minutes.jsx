@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
 import { X, Plus, Trash2, Calendar, Users, CheckCircle, Circle, Edit2, Save } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
-export default function Minutes({ onClose }) {
+export default function Minutes({ onClose, focusMeetingId = null }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,6 +25,7 @@ export default function Minutes({ onClose }) {
   // Action item form
   const [newActionItem, setNewActionItem] = useState({ member: '', task: '' });
   const [editActionItem, setEditActionItem] = useState({ member: '', task: '' });
+  const meetingRefs = useRef({});
 
   // Check authentication on mount
   useEffect(() => {
@@ -41,6 +42,17 @@ export default function Minutes({ onClose }) {
     try {
       const allMeetings = await db.minutes.getAll();
       setMeetings(allMeetings);
+      // Scroll to focused meeting after render
+      if (focusMeetingId) {
+        setTimeout(() => {
+          const el = meetingRefs.current[focusMeetingId];
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-purple-500');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-purple-500'), 3000);
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error('Error loading meetings:', error);
     } finally {
@@ -414,7 +426,8 @@ export default function Minutes({ onClose }) {
                     return (
                     <div
                       key={meeting.id}
-                      className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 hover:shadow-md transition-shadow"
+                      ref={el => { if (el) meetingRefs.current[meeting.id] = el; }}
+                      className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 hover:shadow-md transition-shadow transition-all"
                     >
                       {isEditing ? (
                         // Edit Mode

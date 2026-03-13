@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle } from 'lucide-react';
+import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users } from 'lucide-react';
+import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -244,6 +245,9 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [detailSort, setDetailSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [activeTasks, setActiveTasks] = useState([]);
+  const [recentMeetings, setRecentMeetings] = useState([]);
+  const [showMinutesModal, setShowMinutesModal] = useState(false);
+  const [focusMeetingId, setFocusMeetingId] = useState(null);
 
   // Load all active tasks for dashboard
   useEffect(() => {
@@ -252,10 +256,18 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
       setActiveTasks(tasks);
     };
     loadActiveTasks();
-    // Refresh every minute
     const interval = setInterval(loadActiveTasks, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Load recent meetings for dashboard
+  useEffect(() => {
+    const loadMeetings = async () => {
+      const meetings = await db.minutes.getAll();
+      setRecentMeetings(meetings);
+    };
+    loadMeetings();
+  }, [showMinutesModal]);
 
   const STATUS_MAP = {
     OUT_OF_STOCK: { color: 'red', label: 'Out of Stock', action: 'Order Immediately' },
@@ -521,6 +533,61 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* Team Minutes */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Team Minutes
+          </h3>
+          <button
+            onClick={() => { setFocusMeetingId(null); setShowMinutesModal(true); }}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+          >
+            View All
+          </button>
+        </div>
+
+        {recentMeetings.length === 0 ? (
+          <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+            <p>No meetings recorded yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {recentMeetings.map(meeting => (
+              <div
+                key={meeting.id}
+                onClick={() => { setFocusMeetingId(meeting.id); setShowMinutesModal(true); }}
+                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-600"
+              >
+                <Users className="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                    {meeting.title}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(meeting.meetingDate).toLocaleDateString()} &middot; {meeting.attendees?.length || 0} attendees
+                  </p>
+                </div>
+                {meeting.actionItems && meeting.actionItems.length > 0 && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {meeting.actionItems.filter(a => a.completed).length}/{meeting.actionItems.length} done
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Minutes Modal */}
+      {showMinutesModal && (
+        <Minutes
+          onClose={() => setShowMinutesModal(false)}
+          focusMeetingId={focusMeetingId}
+        />
+      )}
 
       {/* Getting Started or Actions */}
       {stats.total === 0 ? (
