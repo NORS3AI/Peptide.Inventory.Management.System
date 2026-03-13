@@ -23,30 +23,43 @@ function ToolbarButton({ onClick, active, children, title }) {
 
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = '300px' }) {
   const editorRef = useRef(null);
-  const isInternalChange = useRef(false);
+  const onChangeRef = useRef(onChange);
+  const initializedRef = useRef(false);
 
-  // Set initial content
+  // Keep onChange ref current
   useEffect(() => {
-    if (editorRef.current && !isInternalChange.current) {
-      if (editorRef.current.innerHTML !== value) {
-        editorRef.current.innerHTML = value || '';
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  // Set initial content once on mount
+  useEffect(() => {
+    if (editorRef.current && !initializedRef.current) {
+      editorRef.current.innerHTML = value || '';
+      initializedRef.current = true;
+    }
+  }, []);
+
+  // Sync external value changes (e.g. form reset)
+  useEffect(() => {
+    if (editorRef.current && initializedRef.current) {
+      // Only sync if value was cleared externally (form reset)
+      if (value === '' && editorRef.current.innerHTML !== '') {
+        editorRef.current.innerHTML = '';
       }
     }
   }, [value]);
 
-  const execCmd = useCallback((command, value = null) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, value);
-    handleInput();
+  const emitChange = useCallback(() => {
+    if (editorRef.current) {
+      onChangeRef.current(editorRef.current.innerHTML);
+    }
   }, []);
 
-  const handleInput = useCallback(() => {
-    if (editorRef.current) {
-      isInternalChange.current = true;
-      onChange(editorRef.current.innerHTML);
-      isInternalChange.current = false;
-    }
-  }, [onChange]);
+  const execCmd = useCallback((command, val = null) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, val);
+    emitChange();
+  }, [emitChange]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Tab') {
@@ -116,7 +129,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       <div
         ref={editorRef}
         contentEditable
-        onInput={handleInput}
+        onInput={emitChange}
         onKeyDown={handleKeyDown}
         data-placeholder={placeholder || 'Start typing...'}
         className="px-4 py-3 text-gray-900 dark:text-white text-sm focus:outline-none overflow-y-auto

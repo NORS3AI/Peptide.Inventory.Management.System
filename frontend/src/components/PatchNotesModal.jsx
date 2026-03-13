@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.143', date: '2026-03-13', title: 'Fix New Meeting form not loading — rewrite RichTextEditor to prevent value sync loops and stale callbacks' },
+  { version: '0.0.142', date: '2026-03-13', title: 'Fix Team Minutes not loading from Dashboard — fix stale closure bug, force remount on different meeting taps' },
   { version: '0.0.141', date: '2026-03-13', title: 'Dashboard: Show Team Minutes list with date/title/attendees — tap any meeting to open it directly with scroll-to highlight' },
   { version: '0.0.140', date: '2026-03-13', title: 'Dashboard shows all active tasks (not just urgent), Team Minutes rich text editor with bold/italic/underline/strikethrough, text alignment, numbered & bullet lists' },
   { version: '0.0.139', date: '2026-03-13', title: 'Rebuild docs for GitHub Pages deployment — fix 404 after branch rename' },
