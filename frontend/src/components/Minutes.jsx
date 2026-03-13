@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/db';
 import { X, Plus, Trash2, Calendar, Users, CheckCircle, Circle, Edit2, Save } from 'lucide-react';
+import RichTextEditor from './RichTextEditor';
 
-export default function Minutes({ onClose }) {
+export default function Minutes({ onClose, focusMeetingId = null }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,6 +25,7 @@ export default function Minutes({ onClose }) {
   // Action item form
   const [newActionItem, setNewActionItem] = useState({ member: '', task: '' });
   const [editActionItem, setEditActionItem] = useState({ member: '', task: '' });
+  const meetingRefs = useRef({});
 
   // Check authentication on mount
   useEffect(() => {
@@ -40,6 +42,17 @@ export default function Minutes({ onClose }) {
     try {
       const allMeetings = await db.minutes.getAll();
       setMeetings(allMeetings);
+      // Scroll to focused meeting after render
+      if (focusMeetingId) {
+        setTimeout(() => {
+          const el = meetingRefs.current[focusMeetingId];
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-purple-500');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-purple-500'), 3000);
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error('Error loading meetings:', error);
     } finally {
@@ -326,12 +339,11 @@ export default function Minutes({ onClose }) {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Meeting Notes
                       </label>
-                      <textarea
+                      <RichTextEditor
                         value={newMeeting.notes}
-                        onChange={(e) => setNewMeeting({ ...newMeeting, notes: e.target.value })}
+                        onChange={(html) => setNewMeeting({ ...newMeeting, notes: html })}
                         placeholder="What happened in the meeting? Discussion points, decisions made, etc."
-                        rows={8}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                        minHeight="400px"
                       />
                     </div>
 
@@ -414,7 +426,8 @@ export default function Minutes({ onClose }) {
                     return (
                     <div
                       key={meeting.id}
-                      className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 hover:shadow-md transition-shadow"
+                      ref={el => { if (el) meetingRefs.current[meeting.id] = el; }}
+                      className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 hover:shadow-md transition-shadow transition-all"
                     >
                       {isEditing ? (
                         // Edit Mode
@@ -479,11 +492,11 @@ export default function Minutes({ onClose }) {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Meeting Notes
                             </label>
-                            <textarea
+                            <RichTextEditor
                               value={editingMeeting.notes}
-                              onChange={(e) => setEditingMeeting({ ...editingMeeting, notes: e.target.value })}
-                              rows={8}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                              onChange={(html) => setEditingMeeting({ ...editingMeeting, notes: html })}
+                              placeholder="Meeting notes..."
+                              minHeight="400px"
                             />
                           </div>
 
@@ -574,9 +587,15 @@ export default function Minutes({ onClose }) {
                             <div className="mb-4">
                               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Meeting Notes:</h4>
                               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono text-sm">
-                                  {meeting.notes}
-                                </p>
+                                <div
+                                  className="text-gray-800 dark:text-gray-200 text-sm prose prose-sm dark:prose-invert max-w-none
+                                    [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:my-1
+                                    [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:my-1
+                                    [&_li]:my-0.5
+                                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:my-2
+                                    [&_p]:my-1"
+                                  dangerouslySetInnerHTML={{ __html: meeting.notes }}
+                                />
                               </div>
                             </div>
                           )}

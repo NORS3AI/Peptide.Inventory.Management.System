@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.141', date: '2026-03-13', title: 'Dashboard: Show Team Minutes list with date/title/attendees — tap any meeting to open it directly with scroll-to highlight' },
+  { version: '0.0.140', date: '2026-03-13', title: 'Dashboard shows all active tasks (not just urgent), Team Minutes rich text editor with bold/italic/underline/strikethrough, text alignment, numbered & bullet lists' },
   { version: '0.0.139', date: '2026-03-13', title: 'Rebuild docs for GitHub Pages deployment — fix 404 after branch rename' },
   { version: '0.0.138', date: '2026-03-12', title: 'Team Minutes: Password-protected meeting minutes system (password: 1337) - track meetings, notes, attendees, action items per team member, accessible from Daily tab' },
   { version: '0.0.137', date: '2026-03-11', title: 'Daily Tasks: Comprehensive task management system with daily/weekly tasks, expiration dates, priority levels, rich text notes, and urgent task activity log on Dashboard' },
