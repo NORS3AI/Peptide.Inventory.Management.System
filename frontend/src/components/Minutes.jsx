@@ -343,8 +343,9 @@ export default function Minutes({ onClose, focusMeetingId = null }) {
                         Meeting Notes
                       </label>
                       <RichTextEditor
+                        key={showNewMeeting ? 'new-meeting' : 'hidden'}
                         value={newMeeting.notes}
-                        onChange={(html) => setNewMeeting({ ...newMeeting, notes: html })}
+                        onChange={(html) => setNewMeeting(prev => ({ ...prev, notes: html }))}
                         placeholder="What happened in the meeting? Discussion points, decisions made, etc."
                         minHeight="400px"
                       />
@@ -496,8 +497,9 @@ export default function Minutes({ onClose, focusMeetingId = null }) {
                               Meeting Notes
                             </label>
                             <RichTextEditor
+                              key={editingMeeting?.id || 'edit'}
                               value={editingMeeting.notes}
-                              onChange={(html) => setEditingMeeting({ ...editingMeeting, notes: html })}
+                              onChange={(html) => setEditingMeeting(prev => ({ ...prev, notes: html }))}
                               placeholder="Meeting notes..."
                               minHeight="400px"
                             />
