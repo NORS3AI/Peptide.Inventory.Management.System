@@ -584,6 +584,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
       {/* Minutes Modal */}
       {showMinutesModal && (
         <Minutes
+          key={focusMeetingId || 'all'}
           onClose={() => setShowMinutesModal(false)}
           focusMeetingId={focusMeetingId}
         />
