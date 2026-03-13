@@ -243,17 +243,17 @@ function NavButton({ icon, label, active, onClick, badge }) {
 function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [detailSort, setDetailSort] = useState({ field: 'peptideId', direction: 'asc' });
-  const [urgentTasks, setUrgentTasks] = useState([]);
+  const [activeTasks, setActiveTasks] = useState([]);
 
-  // Load urgent tasks
+  // Load all active tasks for dashboard
   useEffect(() => {
-    const loadUrgentTasks = async () => {
-      const tasks = await db.tasks.getUrgent();
-      setUrgentTasks(tasks.slice(0, 5)); // Show top 5 urgent tasks
+    const loadActiveTasks = async () => {
+      const tasks = await db.tasks.getAllActive();
+      setActiveTasks(tasks);
     };
-    loadUrgentTasks();
+    loadActiveTasks();
     // Refresh every minute
-    const interval = setInterval(loadUrgentTasks, 60000);
+    const interval = setInterval(loadActiveTasks, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -463,13 +463,13 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
           </button>
         </div>
 
-        {urgentTasks.length === 0 ? (
+        {activeTasks.length === 0 ? (
           <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-            <p>No urgent tasks. Click "Manage Tasks" to create one.</p>
+            <p>No active tasks. Click "Manage Tasks" to create one.</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {urgentTasks.map(task => {
+            {activeTasks.map(task => {
               const getTimeUntilExpiration = (expirationDate) => {
                 if (!expirationDate) return null;
                 const now = new Date();
