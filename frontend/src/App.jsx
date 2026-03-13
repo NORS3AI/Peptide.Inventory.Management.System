@@ -252,8 +252,20 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   // Load all active tasks for dashboard
   useEffect(() => {
     const loadActiveTasks = async () => {
-      const tasks = await db.tasks.getAllActive();
-      setActiveTasks(tasks);
+      try {
+        const allTasks = await db.tasks.getAll();
+        const active = allTasks.filter(t => !t.completed);
+        active.sort((a, b) => {
+          if (a.priority === 'critical' && b.priority !== 'critical') return -1;
+          if (b.priority === 'critical' && a.priority !== 'critical') return 1;
+          const aExp = a.expirationDate ? new Date(a.expirationDate).getTime() : Infinity;
+          const bExp = b.expirationDate ? new Date(b.expirationDate).getTime() : Infinity;
+          return aExp - bExp;
+        });
+        setActiveTasks(active);
+      } catch (err) {
+        console.error('Failed to load tasks for dashboard:', err);
+      }
     };
     loadActiveTasks();
     const interval = setInterval(loadActiveTasks, 60000);
@@ -263,8 +275,12 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   // Load recent meetings for dashboard
   useEffect(() => {
     const loadMeetings = async () => {
-      const meetings = await db.minutes.getAll();
-      setRecentMeetings(meetings);
+      try {
+        const meetings = await db.minutes.getAll();
+        setRecentMeetings(meetings);
+      } catch (err) {
+        console.error('Failed to load meetings for dashboard:', err);
+      }
     };
     loadMeetings();
   }, [showMinutesModal]);
