@@ -1,7 +1,7 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered } from 'lucide-react';
 
-function ToolbarButton({ onClick, active, children, title }) {
+function ToolbarButton({ onClick, children, title }) {
   return (
     <button
       type="button"
@@ -10,11 +10,7 @@ function ToolbarButton({ onClick, active, children, title }) {
         onClick();
       }}
       title={title}
-      className={`p-1.5 rounded transition-colors ${
-        active
-          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
-      }`}
+      className="p-1.5 rounded transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200"
     >
       {children}
     </button>
@@ -24,49 +20,53 @@ function ToolbarButton({ onClick, active, children, title }) {
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = '300px' }) {
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
-  const initializedRef = useRef(false);
+  const [isEmpty, setIsEmpty] = useState(!value);
 
   // Keep onChange ref current
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Set initial content once on mount
+  // Set initial content on mount
   useEffect(() => {
-    if (editorRef.current && !initializedRef.current) {
+    if (editorRef.current) {
       editorRef.current.innerHTML = value || '';
-      initializedRef.current = true;
+      setIsEmpty(!value);
     }
   }, []);
 
-  // Sync external value changes (e.g. form reset)
+  // Sync when value is externally cleared (form reset)
   useEffect(() => {
-    if (editorRef.current && initializedRef.current) {
-      // Only sync if value was cleared externally (form reset)
-      if (value === '' && editorRef.current.innerHTML !== '') {
-        editorRef.current.innerHTML = '';
-      }
+    if (editorRef.current && value === '' && editorRef.current.innerHTML !== '') {
+      editorRef.current.innerHTML = '';
+      setIsEmpty(true);
     }
   }, [value]);
 
   const emitChange = useCallback(() => {
     if (editorRef.current) {
-      onChangeRef.current(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      const textOnly = editorRef.current.textContent || '';
+      setIsEmpty(textOnly.trim() === '' && !html.includes('<img'));
+      onChangeRef.current(html);
     }
   }, []);
 
   const execCmd = useCallback((command, val = null) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, val);
-    emitChange();
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand(command, false, val);
+      emitChange();
+    }
   }, [emitChange]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      execCmd('insertHTML', '&nbsp;&nbsp;&nbsp;&nbsp;');
+      document.execCommand('insertHTML', false, '\u00a0\u00a0\u00a0\u00a0');
+      emitChange();
     }
-  }, [execCmd]);
+  }, [emitChange]);
 
   const iconSize = 'w-4 h-4';
 
@@ -74,7 +74,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-700">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-        {/* Text formatting */}
         <ToolbarButton onClick={() => execCmd('bold')} title="Bold (Ctrl+B)">
           <Bold className={iconSize} />
         </ToolbarButton>
@@ -90,7 +89,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
-        {/* Alignment */}
         <ToolbarButton onClick={() => execCmd('justifyLeft')} title="Align Left">
           <AlignLeft className={iconSize} />
         </ToolbarButton>
@@ -106,7 +104,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
-        {/* Lists */}
         <ToolbarButton onClick={() => execCmd('insertUnorderedList')} title="Bullet List">
           <List className={iconSize} />
         </ToolbarButton>
@@ -116,7 +113,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
-        {/* Headings */}
         <ToolbarButton onClick={() => execCmd('formatBlock', 'h3')} title="Heading">
           <span className="text-xs font-bold">H</span>
         </ToolbarButton>
@@ -126,21 +122,37 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       </div>
 
       {/* Editor area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={emitChange}
-        onKeyDown={handleKeyDown}
-        data-placeholder={placeholder || 'Start typing...'}
-        className="px-4 py-3 text-gray-900 dark:text-white text-sm focus:outline-none overflow-y-auto
-          [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&:empty]:before:dark:text-gray-500
-          [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:my-1
-          [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:my-1
-          [&_li]:my-0.5
-          [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:my-2
-          [&_p]:my-1"
-        style={{ minHeight }}
-      />
+      <div className="relative">
+        {isEmpty && (
+          <div
+            className="absolute top-3 left-4 text-gray-400 dark:text-gray-500 text-sm pointer-events-none select-none"
+          >
+            {placeholder || 'Start typing...'}
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={emitChange}
+          onFocus={() => {}}
+          onBlur={emitChange}
+          onKeyDown={handleKeyDown}
+          className="px-4 py-3 text-gray-900 dark:text-white text-sm focus:outline-none overflow-y-auto"
+          style={{
+            minHeight,
+            listStylePosition: 'inside',
+          }}
+        />
+      </div>
+
+      {/* Scoped styles for editor content */}
+      <style>{`
+        [contenteditable] ul { list-style-type: disc; margin-left: 1.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+        [contenteditable] ol { list-style-type: decimal; margin-left: 1.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+        [contenteditable] li { margin-top: 0.125rem; margin-bottom: 0.125rem; }
+        [contenteditable] h3 { font-size: 1.125rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        [contenteditable] p { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+      `}</style>
     </div>
   );
 }
