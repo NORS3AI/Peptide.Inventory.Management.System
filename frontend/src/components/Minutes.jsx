@@ -27,6 +27,19 @@ export default function Minutes({ onClose, focusMeetingId = null }) {
   const [editActionItem, setEditActionItem] = useState({ member: '', task: '' });
   const meetingRefs = useRef({});
 
+  // Load meetings
+  const loadMeetings = async () => {
+    setLoading(true);
+    try {
+      const allMeetings = await db.minutes.getAll();
+      setMeetings(allMeetings);
+    } catch (error) {
+      console.error('Error loading meetings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Check authentication on mount
   useEffect(() => {
     const isAuth = sessionStorage.getItem('minutesAuth') === 'true';
@@ -36,29 +49,19 @@ export default function Minutes({ onClose, focusMeetingId = null }) {
     }
   }, []);
 
-  // Load meetings
-  const loadMeetings = async () => {
-    setLoading(true);
-    try {
-      const allMeetings = await db.minutes.getAll();
-      setMeetings(allMeetings);
-      // Scroll to focused meeting after render
-      if (focusMeetingId) {
-        setTimeout(() => {
-          const el = meetingRefs.current[focusMeetingId];
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.add('ring-2', 'ring-purple-500');
-            setTimeout(() => el.classList.remove('ring-2', 'ring-purple-500'), 3000);
-          }
-        }, 100);
-      }
-    } catch (error) {
-      console.error('Error loading meetings:', error);
-    } finally {
-      setLoading(false);
+  // Scroll to focused meeting after meetings load
+  useEffect(() => {
+    if (focusMeetingId && meetings.length > 0 && authenticated) {
+      setTimeout(() => {
+        const el = meetingRefs.current[focusMeetingId];
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-purple-500');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-purple-500'), 3000);
+        }
+      }, 100);
     }
-  };
+  }, [focusMeetingId, meetings, authenticated]);
 
   // Handle password submit
   const handlePasswordSubmit = (e) => {
