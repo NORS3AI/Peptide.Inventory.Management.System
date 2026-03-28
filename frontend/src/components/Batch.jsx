@@ -350,7 +350,7 @@ export default function Batch() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Batch Purchases</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {items.length} item{items.length !== 1 ? 's' : ''} | Total cost: {formatCurrency(totals.totalCost)} | Gross: <span className="text-green-600 dark:text-green-400 font-medium">{formatCurrency(totals.totalProfit)}</span>
+            {items.length} item{items.length !== 1 ? 's' : ''} | Total cost: {formatCurrency(totals.totalCost)} | Gross: {formatCurrency(totals.totalProfit)}
           </p>
           <p className="text-sm">
             Net: <span className="text-green-600 dark:text-green-400 font-semibold">{formatCurrency(totals.net)}</span>
