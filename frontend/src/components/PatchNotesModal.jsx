@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.152', date: '2026-03-28', title: 'Only Net profit highlighted in green in Batch header, Gross stays default' },
+  { version: '0.0.151', date: '2026-03-28', title: 'Batch view header shows Gross profit and Net (Gross minus Total Cost) in green' },
   { version: '0.0.150', date: '2026-03-28', title: 'Fix dark mode text globally — add dark:text-white and dark:bg-gray-900 to html/body base styles so all text is readable' },
   { version: '0.0.149', date: '2026-03-28', title: 'Batch import accepts CSV and Excel (.xlsx/.xls), navigates to Batch view after import instead of Inventory' },
   { version: '0.0.148', date: '2026-03-28', title: 'Remove password gate from Team Meeting Minutes — opens directly without authentication' },
