@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users } from 'lucide-react';
+import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers } from 'lucide-react';
 import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
@@ -15,6 +15,8 @@ import Labeling from './components/Labeling';
 import Compare from './components/Compare';
 import Prices from './components/Prices';
 import Daily from './components/Daily';
+import Batch from './components/Batch';
+import BatchCSVUpload from './components/BatchCSVUpload';
 import SettingsModal from './components/SettingsModal';
 import PatchNotesModal from './components/PatchNotesModal';
 import packageJson from '../package.json';
@@ -119,6 +121,12 @@ function App() {
               onClick={() => setActiveTab('dashboard')}
             />
             <NavButton
+              icon={<Layers className="w-5 h-5" />}
+              label="Batch"
+              active={activeTab === 'batch'}
+              onClick={() => setActiveTab('batch')}
+            />
+            <NavButton
               icon={<Package className="w-5 h-5" />}
               label="Inventory"
               active={activeTab === 'inventory'}
@@ -181,6 +189,7 @@ function App() {
         ) : (
           <>
             {activeTab === 'dashboard' && <DashboardView stats={stats} peptides={peptides} thresholds={thresholds} onNavigate={setActiveTab} />}
+            {activeTab === 'batch' && <BatchView />}
             {activeTab === 'import' && <ImportView onImportComplete={handleImportComplete} peptides={peptides} onRefresh={refresh} />}
             {activeTab === 'inventory' && (
               <InventoryView
@@ -720,6 +729,17 @@ function ImportView({ onImportComplete, peptides, onRefresh }) {
           Import CSV
         </button>
         <button
+          onClick={() => setSubTab('batch')}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            subTab === 'batch'
+              ? 'border-green-600 text-green-600 dark:border-green-400 dark:text-green-400'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Import Batch
+        </button>
+        <button
           onClick={() => setSubTab('scanner')}
           className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
             subTab === 'scanner'
@@ -733,6 +753,7 @@ function ImportView({ onImportComplete, peptides, onRefresh }) {
       </div>
 
       {subTab === 'csv' && <CSVUpload onImportComplete={onImportComplete} />}
+      {subTab === 'batch' && <BatchCSVUpload onImportComplete={onImportComplete} />}
       {subTab === 'scanner' && <PickListScanner peptides={peptides} onRefresh={onRefresh} />}
     </div>
   );
@@ -812,6 +833,10 @@ function StatCard({ title, value, subtitle, icon }) {
 
 function DailyView() {
   return <Daily />;
+}
+
+function BatchView() {
+  return <Batch />;
 }
 
 export default App;
