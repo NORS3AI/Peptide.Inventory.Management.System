@@ -261,6 +261,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   const [recentMeetings, setRecentMeetings] = useState([]);
   const [showMinutesModal, setShowMinutesModal] = useState(false);
   const [focusMeetingId, setFocusMeetingId] = useState(null);
+  const [batchStats, setBatchStats] = useState(null);
 
   // Load all active tasks for dashboard
   useEffect(() => {
@@ -297,6 +298,50 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
     };
     loadMeetings();
   }, [showMinutesModal]);
+
+  // Load batch stats for dashboard
+  useEffect(() => {
+    const loadBatchStats = async () => {
+      try {
+        const items = await db.batches.getAll();
+        if (items.length === 0) { setBatchStats(null); return; }
+
+        let totalCost = 0, totalGross = 0, totalQty = 0;
+        const vendors = new Set();
+        const topProducts = [];
+
+        items.forEach(item => {
+          const pricePerBox = Number(item.pricePerBox) || 0;
+          const qtyPurchased = Number(item.qtyPurchased) || 0;
+          const srgSale = Number(item.srgSale) || 0;
+          const pricePerVial = pricePerBox / 10;
+          const cost = pricePerBox * (qtyPurchased / 10);
+          const profitBatch = (srgSale - pricePerVial) * qtyPurchased;
+
+          totalCost += cost;
+          totalGross += profitBatch;
+          totalQty += qtyPurchased;
+          if (item.vendor) vendors.add(item.vendor);
+          topProducts.push({ name: item.name || item.productId || '?', profit: profitBatch, qty: qtyPurchased, srgSale });
+        });
+
+        topProducts.sort((a, b) => b.profit - a.profit);
+
+        setBatchStats({
+          products: items.length,
+          totalCost,
+          gross: totalGross,
+          net: totalGross - totalCost,
+          totalQty,
+          vendors: vendors.size,
+          topProducts: topProducts.slice(0, 5),
+        });
+      } catch (err) {
+        console.error('Failed to load batch stats:', err);
+      }
+    };
+    loadBatchStats();
+  }, []);
 
   const STATUS_MAP = {
     OUT_OF_STOCK: { color: 'red', label: 'Out of Stock', action: 'Order Immediately' },
@@ -488,6 +533,74 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
           icon={<Package className="w-8 h-8 text-orange-600 dark:text-orange-400" />}
         />
       </div>
+
+      {/* Batch Overview */}
+      {batchStats && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Batch Overview
+            </h3>
+            <button
+              onClick={() => onNavigate('batch')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              View Batch
+            </button>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{batchStats.products}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Products</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{batchStats.totalQty}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">QTY Ordered</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">${batchStats.totalCost.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total Cost</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">${batchStats.gross.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Gross</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">${batchStats.net.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Net</p>
+            </div>
+          </div>
+
+          {/* Top Profitable Products */}
+          {batchStats.topProducts.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Top Profitable Products</h4>
+              <div className="space-y-1.5">
+                {batchStats.topProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
+                      <span className="text-sm text-gray-900 dark:text-white truncate">{p.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">({p.qty} vials)</span>
+                    </div>
+                    <span className={`text-sm font-semibold whitespace-nowrap ml-2 ${p.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      ${p.profit.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Vendor count */}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            {batchStats.vendors} vendor{batchStats.vendors !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
 
       {/* Daily Tasks Activity Log */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
