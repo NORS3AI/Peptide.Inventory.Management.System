@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.148', date: '2026-03-28', title: 'Remove password gate from Team Meeting Minutes — opens directly without authentication' },
   { version: '0.0.147', date: '2026-03-28', title: 'Fix dark mode readability on Import CSV and Import Batch — add dark variants to all banners, info boxes, and buttons' },
   { version: '0.0.146', date: '2026-03-28', title: 'Add Batch Purchases view with cost/profit tracking, inline editing, bulk edit, CSV import, vendor management, and column reorder' },
   { version: '0.0.145', date: '2026-03-13', title: 'Fix Dashboard tasks not loading and New Meeting form — use getAll with filter, replace broken Tailwind arbitrary selectors with inline styles in editor' },
