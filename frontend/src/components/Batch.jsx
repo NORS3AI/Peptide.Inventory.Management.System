@@ -295,7 +295,8 @@ export default function Batch() {
       totalProfit += (getDisplayValue(item, 'profitPerBatch') || computed.profitPerBatch);
       totalQtyPurchased += Number(item.qtyPurchased) || 0;
     });
-    return { totalCost, totalProfit, totalQtyPurchased };
+    const net = totalProfit - totalCost;
+    return { totalCost, totalProfit, totalQtyPurchased, net };
   }, [items]);
 
   const renderCellValue = (item, colId) => {
@@ -349,7 +350,10 @@ export default function Batch() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Batch Purchases</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {items.length} item{items.length !== 1 ? 's' : ''} | Total cost: {formatCurrency(totals.totalCost)} | Total profit: {formatCurrency(totals.totalProfit)}
+            {items.length} item{items.length !== 1 ? 's' : ''} | Total cost: {formatCurrency(totals.totalCost)} | Gross: <span className="text-green-600 dark:text-green-400 font-medium">{formatCurrency(totals.totalProfit)}</span>
+          </p>
+          <p className="text-sm">
+            Net: <span className="text-green-600 dark:text-green-400 font-semibold">{formatCurrency(totals.net)}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
