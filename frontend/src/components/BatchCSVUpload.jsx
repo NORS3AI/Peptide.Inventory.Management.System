@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle2, X, Trash2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { db } from '../lib/db';
 
 // CSV column mapping: header name -> our field name
@@ -23,18 +24,46 @@ const COLUMN_MAP = {
   'profit/batch': 'profitPerBatch_override',
 };
 
+const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+
+function isAcceptedFile(name) {
+  return ACCEPTED_EXTENSIONS.some(ext => name.toLowerCase().endsWith(ext));
+}
+
+function isExcelFile(name) {
+  return name.toLowerCase().endsWith('.xlsx') || name.toLowerCase().endsWith('.xls');
+}
+
 function mapRow(row, index) {
   const item = { rowNum: index + 1 };
   for (const [csvHeader, value] of Object.entries(row)) {
     const normalized = csvHeader.trim().toLowerCase();
     const fieldId = COLUMN_MAP[normalized];
     if (fieldId) {
-      // Clean currency symbols and percentage signs
       let cleaned = String(value || '').replace(/[$,%]/g, '').trim();
       item[fieldId] = cleaned;
     }
   }
   return item;
+}
+
+async function parseFile(file) {
+  if (isExcelFile(file.name)) {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    return data;
+  } else {
+    const text = await file.text();
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+    if (parsed.errors.length > 0) {
+      const errMsg = parsed.errors.slice(0, 3).map(e => e.message).join('; ');
+      throw new Error(`CSV parse errors: ${errMsg}`);
+    }
+    return parsed.data;
+  }
 }
 
 export default function BatchCSVUpload({ onImportComplete }) {
@@ -67,8 +96,8 @@ export default function BatchCSVUpload({ onImportComplete }) {
   };
 
   const handleFile = async (file) => {
-    if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
+    if (!isAcceptedFile(file.name)) {
+      setError('Please upload a CSV or Excel (.xlsx, .xls) file');
       return;
     }
     if (importMode === 'replace') {
@@ -85,15 +114,8 @@ export default function BatchCSVUpload({ onImportComplete }) {
     setResult(null);
 
     try {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-
-      if (parsed.errors.length > 0) {
-        const errMsg = parsed.errors.slice(0, 3).map(e => e.message).join('; ');
-        throw new Error(`CSV parse errors: ${errMsg}`);
-      }
-
-      const rows = parsed.data.map((row, i) => mapRow(row, i)).filter(r => r.productId || r.name);
+      const data = await parseFile(file);
+      const rows = data.map((row, i) => mapRow(row, i)).filter(r => r.productId || r.name);
 
       let importedCount = 0;
       let updatedCount = 0;
@@ -103,7 +125,6 @@ export default function BatchCSVUpload({ onImportComplete }) {
         await db.batches.bulkImport(rows);
         importedCount = rows.length;
       } else {
-        // Update mode: match by productId
         const existing = await db.batches.getAll();
         const existingMap = new Map(existing.map(e => [e.productId, e]));
 
@@ -122,7 +143,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
       setResult({ success: true, mode: importMode, imported: importedCount, updated: updatedCount, total: rows.length });
       if (onImportComplete) onImportComplete();
     } catch (err) {
-      setError(err.message || 'Failed to import batch CSV');
+      setError(err.message || 'Failed to import file');
     } finally {
       setImporting(false);
     }
@@ -176,13 +197,14 @@ export default function BatchCSVUpload({ onImportComplete }) {
         } ${importing ? 'opacity-50 pointer-events-none' : 'hover:border-gray-400 dark:hover:border-gray-500'}`}
         onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
       >
-        <input type="file" id="batch-csv-upload" accept=".csv" onChange={handleChange} className="hidden" disabled={importing} />
+        <input type="file" id="batch-csv-upload" accept=".csv,.xlsx,.xls" onChange={handleChange} className="hidden" disabled={importing} />
         <Upload className={`w-16 h-16 mx-auto mb-4 ${dragActive ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`} />
-        <p className="text-lg font-medium text-gray-900 dark:text-white">{importing ? 'Importing...' : 'Drop Batch CSV here'}</p>
+        <p className="text-lg font-medium text-gray-900 dark:text-white">{importing ? 'Importing...' : 'Drop Batch CSV or Excel file here'}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           or <label htmlFor="batch-csv-upload" className="text-blue-600 hover:text-blue-700 cursor-pointer font-medium">browse to upload</label>
         </p>
-        <p className="text-xs text-gray-500 mt-4">Mode: <span className="font-semibold">{importMode === 'replace' ? 'Replace All' : 'Update Existing'}</span></p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Supports .csv, .xlsx, and .xls files</p>
+        <p className="text-xs text-gray-500 mt-2">Mode: <span className="font-semibold">{importMode === 'replace' ? 'Replace All' : 'Update Existing'}</span></p>
       </div>
 
       {/* Actions */}
@@ -205,7 +227,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
               <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Replace All Batch Data?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">This will delete all existing batch data and replace with the CSV.</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">This will delete all existing batch data and replace with the uploaded file.</p>
                 <div className="flex gap-3">
                   <button onClick={() => { setShowReplaceConfirm(false); if (pendingFile) { processFile(pendingFile); setPendingFile(null); } }}
                     className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium">Yes, Replace</button>
@@ -261,8 +283,9 @@ export default function BatchCSVUpload({ onImportComplete }) {
 
       {/* Format info */}
       <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Batch CSV Format</h3>
+        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Batch Import Format</h3>
         <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
+          <li>Accepts CSV (.csv) and Excel (.xlsx, .xls) files</li>
           <li>Required columns: #, Vendor, ID, Name, MG/ML, $/Box, QTY Purchased</li>
           <li>Optional: $/Vial, Total/Qty, COMP1-3, SRG Sale, Profit columns</li>
           <li>Calculated fields ($/Vial, Total/Qty, Profit) auto-compute if not provided</li>
