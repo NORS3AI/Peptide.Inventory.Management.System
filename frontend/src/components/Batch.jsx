@@ -467,8 +467,8 @@ export default function Batch() {
       )}
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
-        <table className="w-full text-sm text-gray-900 dark:text-white">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto batch-scroll">
+        <table className="min-w-max text-sm text-gray-900 dark:text-white">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <th className="px-2 py-2 text-left w-8">
