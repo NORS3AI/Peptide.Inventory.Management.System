@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2 } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 
@@ -11,6 +11,8 @@ export default function SettingsModal({ isOpen, onClose }) {
   });
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [vendors, setVendors] = useState(['Belgium']);
+  const [newVendorInput, setNewVendorInput] = useState('');
   const modalRef = useRef(null);
   const fileInputRef = useRef(null);
   const { success, error: showError } = useToast();
@@ -29,6 +31,31 @@ export default function SettingsModal({ isOpen, onClose }) {
       document.documentElement.style.fontSize = `${saved}px`;
     }
   }, []);
+
+  // Load vendors
+  useEffect(() => {
+    if (!isOpen) return;
+    const loadVendors = async () => {
+      const saved = await db.settings.get('batchVendors');
+      if (saved && Array.isArray(saved) && saved.length > 0) setVendors(saved);
+    };
+    loadVendors();
+  }, [isOpen]);
+
+  const addVendorSetting = async () => {
+    if (!newVendorInput.trim() || vendors.includes(newVendorInput.trim())) return;
+    const updated = [...vendors, newVendorInput.trim()];
+    setVendors(updated);
+    await db.settings.set('batchVendors', updated);
+    setNewVendorInput('');
+    success('Vendor added');
+  };
+
+  const removeVendorSetting = async (v) => {
+    const updated = vendors.filter(x => x !== v);
+    setVendors(updated);
+    await db.settings.set('batchVendors', updated);
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -217,6 +244,40 @@ export default function SettingsModal({ isOpen, onClose }) {
               >
                 Reset to default (16pt)
               </button>
+            </div>
+
+            {/* Vendor Management */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Batch Vendors</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Manage the vendor list used in the Batch view.
+              </p>
+              <div className="space-y-2 mb-3">
+                {vendors.map(v => (
+                  <div key={v} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-sm text-gray-900 dark:text-white">{v}</span>
+                    <button onClick={() => removeVendorSetting(v)} className="text-red-500 hover:text-red-700 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={newVendorInput}
+                  onChange={e => setNewVendorInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addVendorSetting()}
+                  placeholder="New vendor name"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <button onClick={addVendorSetting} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
             </div>
 
             {/* Backup & Restore */}
