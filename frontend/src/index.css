@@ -52,6 +52,59 @@
 }
 
 @layer components {
+  /* Batch table scrollbar — big, sleek, easy to grab */
+  .batch-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: #94a3b8 transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .batch-scroll::-webkit-scrollbar {
+    height: 14px;
+  }
+
+  .batch-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+    margin: 0 8px;
+  }
+
+  .batch-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #94a3b8, #64748b);
+    border-radius: 8px;
+    border: 2px solid #f1f5f9;
+    min-width: 60px;
+  }
+
+  .batch-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #64748b, #475569);
+  }
+
+  .batch-scroll::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #475569, #334155);
+  }
+
+  .dark .batch-scroll {
+    scrollbar-color: #64748b transparent;
+  }
+
+  .dark .batch-scroll::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  .dark .batch-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #64748b, #475569);
+    border-color: #1e293b;
+  }
+
+  .dark .batch-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #94a3b8, #64748b);
+  }
+
+  .dark .batch-scroll::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  }
+
   /* Status badge styles */
   .status-badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
