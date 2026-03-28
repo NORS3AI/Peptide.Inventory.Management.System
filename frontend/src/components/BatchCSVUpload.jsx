@@ -192,7 +192,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
           <FileText className="w-4 h-4" /><span>Download Sample CSV</span>
         </button>
         <button onClick={async () => { await db.batches.clear(); setResult({ success: true, cleared: true }); if (onImportComplete) onImportComplete(); }}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50">
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20">
           <Trash2 className="w-4 h-4" /><span>Clear Batch Data</span>
         </button>
       </div>
@@ -220,12 +220,12 @@ export default function BatchCSVUpload({ onImportComplete }) {
 
       {/* Results */}
       {result?.success && !result.cleared && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-start">
-            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-green-900">Batch Import Successful!</h3>
-              <div className="mt-2 text-sm text-green-800">
+              <h3 className="text-sm font-medium text-green-900 dark:text-green-200">Batch Import Successful!</h3>
+              <div className="mt-2 text-sm text-green-800 dark:text-green-300">
                 {result.mode === 'replace' ? (
                   <p>Replaced all batch data with <strong>{result.imported}</strong> items.</p>
                 ) : (
@@ -233,33 +233,36 @@ export default function BatchCSVUpload({ onImportComplete }) {
                 )}
               </div>
             </div>
-            <button onClick={() => setResult(null)} className="ml-3 text-green-600 hover:text-green-800"><X className="w-5 h-5" /></button>
+            <button onClick={() => setResult(null)} className="ml-3 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"><X className="w-5 h-5" /></button>
           </div>
         </div>
       )}
       {result?.cleared && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-start">
-            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-            <div className="ml-3"><h3 className="text-sm font-medium text-green-900">Batch data cleared.</h3></div>
-            <button onClick={() => setResult(null)} className="ml-auto text-green-600 hover:text-green-800"><X className="w-5 h-5" /></button>
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <div className="ml-3"><h3 className="text-sm font-medium text-green-900 dark:text-green-200">Batch data cleared.</h3></div>
+            <button onClick={() => setResult(null)} className="ml-auto text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"><X className="w-5 h-5" /></button>
           </div>
         </div>
       )}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-            <div className="ml-3"><h3 className="text-sm font-medium text-red-900">Import Failed</h3><p className="mt-1 text-sm text-red-800">{error}</p></div>
-            <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-800"><X className="w-5 h-5" /></button>
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-900 dark:text-red-200">Import Failed</h3>
+              <p className="mt-1 text-sm text-red-800 dark:text-red-300">{error}</p>
+            </div>
+            <button onClick={() => setError(null)} className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"><X className="w-5 h-5" /></button>
           </div>
         </div>
       )}
 
       {/* Format info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Batch CSV Format</h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Batch CSV Format</h3>
+        <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
           <li>Required columns: #, Vendor, ID, Name, MG/ML, $/Box, QTY Purchased</li>
           <li>Optional: $/Vial, Total/Qty, COMP1-3, SRG Sale, Profit columns</li>
           <li>Calculated fields ($/Vial, Total/Qty, Profit) auto-compute if not provided</li>

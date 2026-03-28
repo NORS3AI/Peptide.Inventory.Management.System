@@ -285,7 +285,7 @@ export default function CSVUpload({ onImportComplete }) {
         <ExclusionManager />
         <button
           onClick={() => setShowClearConfirm(true)}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           <span>Clear All Data</span>
@@ -363,12 +363,12 @@ export default function CSVUpload({ onImportComplete }) {
 
       {/* Success Result */}
       {result && result.success && !result.cleared && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-start">
-            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-green-900">Import Successful!</h3>
-              <div className="mt-2 text-sm text-green-800">
+              <h3 className="text-sm font-medium text-green-900 dark:text-green-200">Import Successful!</h3>
+              <div className="mt-2 text-sm text-green-800 dark:text-green-300">
                 {result.mode === 'replace' ? (
                   <p>Replaced all inventory with <strong>{result.imported}</strong> peptides.</p>
                 ) : (
@@ -390,7 +390,7 @@ export default function CSVUpload({ onImportComplete }) {
             </div>
             <button
               onClick={clearResult}
-              className="ml-3 text-green-600 hover:text-green-800"
+              className="ml-3 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
             >
               <X className="w-5 h-5" />
             </button>
@@ -400,18 +400,18 @@ export default function CSVUpload({ onImportComplete }) {
 
       {/* Clear Success */}
       {result && result.cleared && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-start">
-            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-green-900">All Data Cleared</h3>
-              <div className="mt-2 text-sm text-green-800">
+              <h3 className="text-sm font-medium text-green-900 dark:text-green-200">All Data Cleared</h3>
+              <div className="mt-2 text-sm text-green-800 dark:text-green-300">
                 <p>All inventory data has been removed. Ready for fresh import.</p>
               </div>
             </div>
             <button
               onClick={clearResult}
-              className="ml-3 text-green-600 hover:text-green-800"
+              className="ml-3 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
             >
               <X className="w-5 h-5" />
             </button>
@@ -421,18 +421,18 @@ export default function CSVUpload({ onImportComplete }) {
 
       {/* Error Result */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-red-900">Import Failed</h3>
-              <div className="mt-2 text-sm text-red-800">
+              <h3 className="text-sm font-medium text-red-900 dark:text-red-200">Import Failed</h3>
+              <div className="mt-2 text-sm text-red-800 dark:text-red-300">
                 <p>{error}</p>
               </div>
             </div>
             <button
               onClick={clearResult}
-              className="ml-3 text-red-600 hover:text-red-800"
+              className="ml-3 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
             >
               <X className="w-5 h-5" />
             </button>
@@ -441,9 +441,9 @@ export default function CSVUpload({ onImportComplete }) {
       )}
 
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">CSV Format Requirements</h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">CSV Format Requirements</h3>
+        <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
           <li>Required columns: Product, SKU, Quantity</li>
           <li>Optional columns: Size, Batch Number, Purity, Velocity, Status, etc.</li>
           <li>First row must contain headers</li>
