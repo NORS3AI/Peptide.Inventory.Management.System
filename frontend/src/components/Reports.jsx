@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Download, TrendingUp, Clock, Package, CheckCircle, AlertTriangle, FileText, PieChart as PieChartIcon, BarChart3, LineChart as LineChartIcon, AreaChart as AreaChartIcon, ArrowUpDown, Tag } from 'lucide-react';
+import { Download, TrendingUp, Clock, Package, CheckCircle, AlertTriangle, FileText, PieChart as PieChartIcon, BarChart3, LineChart as LineChartIcon, AreaChart as AreaChartIcon, ArrowUpDown, Tag, Layers, DollarSign } from 'lucide-react';
 import { PieChart, Pie, BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { calculateStockStatus } from '../utils/stockStatus';
 import { checkSalesReadiness } from '../utils/salesReadiness';
@@ -14,6 +14,8 @@ export default function Reports({ peptides, orders = [], thresholds }) {
   const [lowStockSort, setLowStockSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [missingReqSort, setMissingReqSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [labelingSort, setLabelingSort] = useState({ field: 'labeledCount', direction: 'asc' });
+  const [batchItems, setBatchItems] = useState([]);
+  const [batchSort, setBatchSort] = useState({ field: 'profitPerBatch', direction: 'desc' });
 
   // Custom tooltip style for charts with semi-transparent background and bright text
   const tooltipStyle = {
@@ -41,6 +43,94 @@ export default function Reports({ peptides, orders = [], thresholds }) {
     };
     fetchTransactions();
   }, []);
+
+  // Fetch batch data
+  useEffect(() => {
+    const fetchBatch = async () => {
+      const items = await db.batches.getAll();
+      setBatchItems(items);
+    };
+    fetchBatch();
+  }, []);
+
+  // Batch analytics
+  const batchAnalytics = useMemo(() => {
+    if (batchItems.length === 0) return null;
+
+    let totalCost = 0, totalGross = 0, totalQty = 0, totalRevenue = 0;
+    const vendorBreakdown = {};
+    const productData = [];
+
+    batchItems.forEach(item => {
+      const pricePerBox = Number(item.pricePerBox) || 0;
+      const qtyPurchased = Number(item.qtyPurchased) || 0;
+      const srgSale = Number(item.srgSale) || 0;
+      const pricePerVial = pricePerBox / 10;
+      const cost = pricePerBox * (qtyPurchased / 10);
+      const revenue = srgSale * qtyPurchased;
+      const profitBatch = (srgSale - pricePerVial) * qtyPurchased;
+      const profitPct = pricePerVial > 0 ? ((srgSale - pricePerVial) / pricePerVial) * 100 : 0;
+
+      totalCost += cost;
+      totalGross += profitBatch;
+      totalQty += qtyPurchased;
+      totalRevenue += revenue;
+
+      const vendor = item.vendor || 'Unknown';
+      if (!vendorBreakdown[vendor]) vendorBreakdown[vendor] = { cost: 0, profit: 0, qty: 0, products: 0 };
+      vendorBreakdown[vendor].cost += cost;
+      vendorBreakdown[vendor].profit += profitBatch;
+      vendorBreakdown[vendor].qty += qtyPurchased;
+      vendorBreakdown[vendor].products += 1;
+
+      productData.push({
+        name: item.name || item.productId || '?',
+        productId: item.productId || '',
+        vendor,
+        qtyPurchased,
+        pricePerVial,
+        srgSale,
+        cost,
+        revenue,
+        profitPerBatch: profitBatch,
+        profitPct,
+      });
+    });
+
+    const avgMargin = totalCost > 0 ? ((totalGross) / totalCost) * 100 : 0;
+    const net = totalGross - totalCost;
+
+    return {
+      totalCost,
+      totalGross,
+      net,
+      totalQty,
+      totalRevenue,
+      avgMargin,
+      products: batchItems.length,
+      vendorBreakdown,
+      productData,
+    };
+  }, [batchItems]);
+
+  const sortedBatchProducts = useMemo(() => {
+    if (!batchAnalytics) return [];
+    const items = [...batchAnalytics.productData];
+    items.sort((a, b) => {
+      const aVal = a[batchSort.field] ?? '';
+      const bVal = b[batchSort.field] ?? '';
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) return batchSort.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return batchSort.direction === 'asc' ? cmp : -cmp;
+    });
+    return items;
+  }, [batchAnalytics, batchSort]);
+
+  const handleBatchSort = (field) => {
+    setBatchSort(prev => ({ field, direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc' }));
+  };
 
   // Calculate comprehensive statistics
   const stats = useMemo(() => {
@@ -1108,6 +1198,144 @@ ${stats.needsAttention.map(p =>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Analysis */}
+      {batchAnalytics && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Layers className="w-5 h-5" />
+            Batch Purchase Analysis
+          </h3>
+
+          {/* Batch Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{batchAnalytics.products}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Products</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{batchAnalytics.totalQty}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total QTY</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-gray-900 dark:text-white">${batchAnalytics.totalCost.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total Cost</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-gray-900 dark:text-white">${batchAnalytics.totalRevenue.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total Revenue</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-gray-900 dark:text-white">${batchAnalytics.totalGross.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Gross Profit</p>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center border border-green-200 dark:border-green-800">
+              <p className="text-xl font-bold text-green-600 dark:text-green-400">${batchAnalytics.net.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Net Profit</p>
+            </div>
+          </div>
+
+          {/* Average Margin */}
+          <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-900 dark:text-blue-200">
+              Average Margin: <span className="font-bold">{batchAnalytics.avgMargin.toFixed(1)}%</span>
+            </p>
+          </div>
+
+          {/* Vendor Breakdown */}
+          {Object.keys(batchAnalytics.vendorBreakdown).length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Vendor Breakdown</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.entries(batchAnalytics.vendorBreakdown).map(([vendor, data]) => (
+                  <div key={vendor} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{vendor}</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">Products:</span>
+                      <span className="text-gray-900 dark:text-white text-right">{data.products}</span>
+                      <span className="text-gray-500 dark:text-gray-400">QTY:</span>
+                      <span className="text-gray-900 dark:text-white text-right">{data.qty}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Cost:</span>
+                      <span className="text-gray-900 dark:text-white text-right">${data.cost.toFixed(2)}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Profit:</span>
+                      <span className={`text-right font-medium ${data.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>${data.profit.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Product-level table */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">All Batch Products</h4>
+            <div className="overflow-x-auto batch-scroll">
+              <table className="min-w-max w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    {[
+                      { id: 'name', label: 'Product' },
+                      { id: 'vendor', label: 'Vendor' },
+                      { id: 'qtyPurchased', label: 'QTY' },
+                      { id: 'pricePerVial', label: '$/Vial' },
+                      { id: 'srgSale', label: 'SRG Sale' },
+                      { id: 'cost', label: 'Cost' },
+                      { id: 'revenue', label: 'Revenue' },
+                      { id: 'profitPerBatch', label: 'Profit' },
+                      { id: 'profitPct', label: 'Margin %' },
+                    ].map(col => (
+                      <th
+                        key={col.id}
+                        onClick={() => handleBatchSort(col.id)}
+                        className="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 whitespace-nowrap select-none"
+                      >
+                        <span className="flex items-center gap-1">
+                          {col.label}
+                          {batchSort.field === col.id && (
+                            <span className="text-blue-600 dark:text-blue-400">{batchSort.direction === 'asc' ? '\u2191' : '\u2193'}</span>
+                          )}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {sortedBatchProducts.map((p, i) => (
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-3 py-2 font-medium text-gray-900 dark:text-white whitespace-nowrap">{p.name}</td>
+                      <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{p.vendor}</td>
+                      <td className="px-3 py-2 text-right">{p.qtyPurchased}</td>
+                      <td className="px-3 py-2 text-right">${p.pricePerVial.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">${p.srgSale.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">${p.cost.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">${p.revenue.toFixed(2)}</td>
+                      <td className={`px-3 py-2 text-right font-medium ${p.profitPerBatch >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        ${p.profitPerBatch.toFixed(2)}
+                      </td>
+                      <td className={`px-3 py-2 text-right ${p.profitPct >= 50 ? 'text-green-600 dark:text-green-400 font-semibold' : p.profitPct >= 20 ? 'text-green-600 dark:text-green-400' : p.profitPct > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {p.profitPct.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-300 dark:border-gray-600 font-semibold">
+                    <td className="px-3 py-2">Total</td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2 text-right">{batchAnalytics.totalQty}</td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2 text-right">${batchAnalytics.totalCost.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right">${batchAnalytics.totalRevenue.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right text-green-600 dark:text-green-400">${batchAnalytics.totalGross.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right">{batchAnalytics.avgMargin.toFixed(1)}%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       )}
