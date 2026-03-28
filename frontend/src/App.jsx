@@ -66,6 +66,10 @@ function App() {
     setActiveTab('inventory');
   };
 
+  const handleBatchImportComplete = () => {
+    setActiveTab('batch');
+  };
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors overflow-x-hidden">
@@ -190,7 +194,7 @@ function App() {
           <>
             {activeTab === 'dashboard' && <DashboardView stats={stats} peptides={peptides} thresholds={thresholds} onNavigate={setActiveTab} />}
             {activeTab === 'batch' && <BatchView />}
-            {activeTab === 'import' && <ImportView onImportComplete={handleImportComplete} peptides={peptides} onRefresh={refresh} />}
+            {activeTab === 'import' && <ImportView onImportComplete={handleImportComplete} onBatchImportComplete={handleBatchImportComplete} peptides={peptides} onRefresh={refresh} />}
             {activeTab === 'inventory' && (
               <InventoryView
                 peptides={peptides}
@@ -705,7 +709,7 @@ function SalesReadyView({ peptides, onRefresh }) {
   );
 }
 
-function ImportView({ onImportComplete, peptides, onRefresh }) {
+function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefresh }) {
   const [subTab, setSubTab] = useState('csv');
 
   return (
@@ -753,7 +757,7 @@ function ImportView({ onImportComplete, peptides, onRefresh }) {
       </div>
 
       {subTab === 'csv' && <CSVUpload onImportComplete={onImportComplete} />}
-      {subTab === 'batch' && <BatchCSVUpload onImportComplete={onImportComplete} />}
+      {subTab === 'batch' && <BatchCSVUpload onImportComplete={onBatchImportComplete} />}
       {subTab === 'scanner' && <PickListScanner peptides={peptides} onRefresh={onRefresh} />}
     </div>
   );
