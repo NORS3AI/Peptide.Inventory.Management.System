@@ -423,6 +423,18 @@ export const db = {
     },
 
     /**
+     * Get all velocity history entries for all peptides
+     * @returns {Promise<object>} Map of peptideId -> history array
+     */
+    async getAll() {
+      const all = {};
+      await velocityHistoryStore.iterate((value, key) => {
+        all[key] = value;
+      });
+      return all;
+    },
+
+    /**
      * Clear history for a specific peptide
      */
     async clear(peptideId) {

@@ -137,6 +137,13 @@ export default function CSVUpload({ onImportComplete }) {
         }
       }
 
+      // Record velocity history for all imported peptides that have velocity data
+      for (const peptide of parseResult.peptides) {
+        if (peptide.velocity && peptide.peptideId) {
+          await db.velocityHistory.add(peptide.peptideId, peptide.velocity);
+        }
+      }
+
       setResult({
         success: true,
         mode: importMode,
