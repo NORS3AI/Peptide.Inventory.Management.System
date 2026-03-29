@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Plus, Trash2, Edit3, Settings2, X, Check, Package } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Plus, Trash2, Edit3, Settings2, X, Check, Package, Download } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import ColumnReorderModal from './ColumnReorderModal';
@@ -299,6 +299,35 @@ export default function Batch() {
     return { totalCost, totalProfit, totalQtyPurchased, net };
   }, [items]);
 
+  const handleExport = useCallback(() => {
+    if (items.length === 0) return;
+    const headers = DEFAULT_COLUMNS.map(c => c.label);
+    const rows = items.map(item => {
+      return DEFAULT_COLUMNS.map(col => {
+        const val = getDisplayValue(item, col.id);
+        if (val === null || val === undefined || val === '') return '';
+        return String(val);
+      });
+    });
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => {
+        if (cell.includes(',') || cell.includes('"')) return `"${cell.replace(/"/g, '""')}"`;
+        return cell;
+      }).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `srg-batch-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    success('Batch data exported');
+  }, [items, success]);
+
   const renderCellValue = (item, colId) => {
     const val = getDisplayValue(item, colId);
     switch (colId) {
@@ -366,6 +395,14 @@ export default function Batch() {
               Delete ({selectedRows.size})
             </button>
           )}
+          <button
+            onClick={handleExport}
+            disabled={items.length === 0}
+            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
           <button
             onClick={() => setShowVendorManager(true)}
             className="flex items-center gap-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"

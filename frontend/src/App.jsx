@@ -963,7 +963,7 @@ function ImportView({ onImportComplete, onBatchImportComplete, onBoxImportComple
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-0 overflow-x-auto">
+      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-0">
         <button
           onClick={() => setSubTab('csv')}
           className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
