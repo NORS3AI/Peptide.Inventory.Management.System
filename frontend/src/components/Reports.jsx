@@ -20,6 +20,10 @@ export default function Reports({ peptides, orders = [], thresholds }) {
   const [invVelocityChartType, setInvVelocityChartType] = useState('bar');
   const [invVelocitySort, setInvVelocitySort] = useState({ field: 'velocity', direction: 'desc' });
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [boxItems, setBoxItems] = useState([]);
+  const [earningsPerSec, setEarningsPerSec] = useState(0);
+  const [liveEarnings, setLiveEarnings] = useState(0);
+  const [earningsStartTime, setEarningsStartTime] = useState(null);
 
   // Custom tooltip style for charts with semi-transparent background and bright text
   const tooltipStyle = {
@@ -55,6 +59,17 @@ export default function Reports({ peptides, orders = [], thresholds }) {
       setBatchItems(items);
     };
     fetchBatch();
+  }, []);
+
+  // Fetch box data
+  useEffect(() => {
+    const fetchBoxes = async () => {
+      try {
+        const items = await db.boxes.getAll();
+        setBoxItems(items);
+      } catch (e) { console.error('Failed to load boxes:', e); }
+    };
+    fetchBoxes();
   }, []);
 
   // Fetch velocity history
@@ -257,6 +272,125 @@ export default function Reports({ peptides, orders = [], thresholds }) {
   const handleInvVelocitySort = (field) => {
     setInvVelocitySort(prev => ({ field, direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc' }));
   };
+
+  // Financial analytics — aggregates all financial data
+  const financialData = useMemo(() => {
+    // Batch financials
+    let batchCost = 0, batchRevenue = 0, batchGross = 0, batchQty = 0;
+    const vendorCosts = {};
+    const productProfits = [];
+
+    batchItems.forEach(item => {
+      const pricePerBox = Number(item.pricePerBox) || 0;
+      const qtyPurchased = Number(item.qtyPurchased) || 0;
+      const srgSale = Number(item.srgSale) || 0;
+      const pricePerVial = pricePerBox / 10;
+      const cost = pricePerBox * (qtyPurchased / 10);
+      const revenue = srgSale * qtyPurchased;
+      const profit = (srgSale - pricePerVial) * qtyPurchased;
+
+      batchCost += cost;
+      batchRevenue += revenue;
+      batchGross += profit;
+      batchQty += qtyPurchased;
+
+      const vendor = item.vendor || 'Unknown';
+      if (!vendorCosts[vendor]) vendorCosts[vendor] = { cost: 0, revenue: 0, profit: 0 };
+      vendorCosts[vendor].cost += cost;
+      vendorCosts[vendor].revenue += revenue;
+      vendorCosts[vendor].profit += profit;
+
+      productProfits.push({
+        name: item.name || item.productId || '?',
+        cost, revenue, profit,
+        margin: cost > 0 ? (profit / cost) * 100 : 0,
+        srgSale,
+      });
+    });
+
+    const batchNet = batchGross - batchCost;
+
+    // Box costs
+    let boxTotalValue = 0, boxDailyCost = 0;
+    boxItems.forEach(item => {
+      const onHand = Number(item.onHand) || 0;
+      const costPerUnit = Number(item.costPerUnit) || 0;
+      const dailyUsage = Number(item.dailyUsage) || 0;
+      boxTotalValue += onHand * costPerUnit;
+      boxDailyCost += dailyUsage * costPerUnit;
+    });
+
+    // Inventory value (quantity = units in stock)
+    const inventoryUnits = peptides.reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
+
+    // Average sale price from batch data
+    const avgSalePrice = batchQty > 0 ? batchRevenue / batchQty : 0;
+
+    // Daily revenue estimate from velocity
+    let dailyRevenue = 0;
+    peptides.forEach(p => {
+      const vel = parseFloat(String(p.velocity || '0').replace(/[^0-9.-]/g, '')) || 0;
+      dailyRevenue += vel * avgSalePrice;
+    });
+
+    const totalVelocity = peptides.reduce((sum, p) => {
+      return sum + (parseFloat(String(p.velocity || '0').replace(/[^0-9.-]/g, '')) || 0);
+    }, 0);
+
+    // Use total velocity and avg sale price for per-second earnings
+    const dailyRevenueEst = totalVelocity * avgSalePrice;
+    const revenuePerSecond = dailyRevenueEst / 86400;
+    const profitPerSecond = batchCost > 0 ? revenuePerSecond * (batchGross / batchRevenue) : revenuePerSecond * 0.5;
+
+    // Vendor breakdown chart data
+    const vendorChartData = Object.entries(vendorCosts).map(([name, d]) => ({
+      name, cost: Math.round(d.cost * 100) / 100, revenue: Math.round(d.revenue * 100) / 100, profit: Math.round(d.profit * 100) / 100,
+    })).sort((a, b) => b.profit - a.profit);
+
+    // Top profitable products
+    productProfits.sort((a, b) => b.profit - a.profit);
+
+    // Profit margin distribution
+    const marginBuckets = { 'Loss': 0, '0-25%': 0, '25-50%': 0, '50-100%': 0, '100%+': 0 };
+    productProfits.forEach(p => {
+      if (p.margin < 0) marginBuckets['Loss']++;
+      else if (p.margin < 25) marginBuckets['0-25%']++;
+      else if (p.margin < 50) marginBuckets['25-50%']++;
+      else if (p.margin < 100) marginBuckets['50-100%']++;
+      else marginBuckets['100%+']++;
+    });
+    const marginData = Object.entries(marginBuckets).filter(([, v]) => v > 0).map(([name, value]) => ({
+      name, value,
+      color: name === 'Loss' ? '#ef4444' : name === '0-25%' ? '#f97316' : name === '25-50%' ? '#eab308' : name === '50-100%' ? '#22c55e' : '#10b981',
+    }));
+
+    return {
+      batchCost, batchRevenue, batchGross, batchNet, batchQty,
+      boxTotalValue, boxDailyCost,
+      inventoryUnits,
+      avgSalePrice,
+      dailyRevenueEst,
+      revenuePerSecond,
+      profitPerSecond,
+      vendorChartData,
+      productProfits: productProfits.slice(0, 20),
+      marginData,
+      totalVelocity,
+      avgMargin: batchCost > 0 ? (batchGross / batchCost) * 100 : 0,
+    };
+  }, [batchItems, boxItems, peptides]);
+
+  // Live earnings timer
+  useEffect(() => {
+    if (financialData.profitPerSecond <= 0) return;
+    setEarningsPerSec(financialData.profitPerSecond);
+    setEarningsStartTime(Date.now());
+    setLiveEarnings(0);
+    const interval = setInterval(() => {
+      setLiveEarnings(prev => prev + financialData.profitPerSecond);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [financialData.profitPerSecond]);
 
   // Calculate comprehensive statistics
   const stats = useMemo(() => {
@@ -1736,6 +1870,217 @@ ${stats.needsAttention.map(p =>
           </div>
         </div>
       )}
+      {/* Financial Analytics */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            Financial Analytics
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Comprehensive financial overview across all imports and views
+          </p>
+        </div>
+
+        {/* Live Earnings Counter */}
+        {financialData.profitPerSecond > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-6 text-white">
+            <div className="text-center">
+              <p className="text-sm font-medium opacity-80 mb-1">SRG Estimated Earnings (Live)</p>
+              <p className="text-5xl font-bold font-mono tracking-wider">
+                ${liveEarnings.toFixed(4)}
+              </p>
+              <div className="flex justify-center gap-8 mt-3 text-sm opacity-90">
+                <div>
+                  <p className="font-bold">${financialData.profitPerSecond.toFixed(6)}</p>
+                  <p className="text-xs opacity-70">per second</p>
+                </div>
+                <div>
+                  <p className="font-bold">${(financialData.profitPerSecond * 60).toFixed(4)}</p>
+                  <p className="text-xs opacity-70">per minute</p>
+                </div>
+                <div>
+                  <p className="font-bold">${(financialData.profitPerSecond * 3600).toFixed(2)}</p>
+                  <p className="text-xs opacity-70">per hour</p>
+                </div>
+                <div>
+                  <p className="font-bold">${(financialData.profitPerSecond * 86400).toFixed(2)}</p>
+                  <p className="text-xs opacity-70">per day</p>
+                </div>
+              </div>
+              <p className="text-xs mt-3 opacity-60">Based on current velocity ({financialData.totalVelocity.toFixed(1)} units/day) and batch profit margins</p>
+            </div>
+          </div>
+        )}
+
+        {/* Financial Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <p className="text-xl font-bold text-gray-900 dark:text-white">${financialData.batchRevenue.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Total Revenue</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <p className="text-xl font-bold text-gray-900 dark:text-white">${financialData.batchCost.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Total Cost (Batches)</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <p className="text-xl font-bold text-gray-900 dark:text-white">${financialData.batchGross.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Gross Profit</p>
+          </div>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center border border-green-200 dark:border-green-800">
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">${financialData.batchNet.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Net Profit</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <p className="text-xl font-bold text-gray-900 dark:text-white">${financialData.boxTotalValue.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Box Inventory Value</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{financialData.avgMargin.toFixed(1)}%</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Avg Profit Margin</p>
+          </div>
+        </div>
+
+        {/* Revenue breakdown cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">Revenue Estimates</p>
+            <div className="space-y-1 text-sm text-blue-800 dark:text-blue-300">
+              <div className="flex justify-between"><span>Daily:</span><span className="font-bold">${financialData.dailyRevenueEst.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Weekly:</span><span className="font-bold">${(financialData.dailyRevenueEst * 7).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Monthly:</span><span className="font-bold">${(financialData.dailyRevenueEst * 30).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Yearly:</span><span className="font-bold">${(financialData.dailyRevenueEst * 365).toFixed(2)}</span></div>
+            </div>
+          </div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+            <p className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-1">Cost Breakdown</p>
+            <div className="space-y-1 text-sm text-purple-800 dark:text-purple-300">
+              <div className="flex justify-between"><span>Batch Purchases:</span><span className="font-bold">${financialData.batchCost.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Box Inventory:</span><span className="font-bold">${financialData.boxTotalValue.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Daily Box Cost:</span><span className="font-bold">${financialData.boxDailyCost.toFixed(2)}</span></div>
+              <div className="flex justify-between border-t border-purple-200 dark:border-purple-700 pt-1"><span>Total Assets:</span><span className="font-bold">${(financialData.batchCost + financialData.boxTotalValue).toFixed(2)}</span></div>
+            </div>
+          </div>
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-1">Key Metrics</p>
+            <div className="space-y-1 text-sm text-emerald-800 dark:text-emerald-300">
+              <div className="flex justify-between"><span>Avg Sale Price:</span><span className="font-bold">${financialData.avgSalePrice.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Inventory Units:</span><span className="font-bold">{financialData.inventoryUnits}</span></div>
+              <div className="flex justify-between"><span>Total Velocity:</span><span className="font-bold">{financialData.totalVelocity.toFixed(1)}/day</span></div>
+              <div className="flex justify-between"><span>Batch Products:</span><span className="font-bold">{financialData.batchQty}</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Vendor P&L Chart */}
+          {financialData.vendorChartData.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Vendor Profit & Loss</h4>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={financialData.vendorChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                  <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '11px' }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: '11px' }} />
+                  <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} formatter={(value) => `$${value.toFixed(2)}`} />
+                  <Legend />
+                  <Bar dataKey="cost" fill="#ef4444" name="Cost" />
+                  <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
+                  <Bar dataKey="profit" fill="#22c55e" name="Profit" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Profit Margin Distribution */}
+          {financialData.marginData.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Profit Margin Distribution</h4>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={financialData.marginData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={100}
+                    dataKey="value"
+                  >
+                    {financialData.marginData.map((entry, i) => (
+                      <Cell key={`margin-${i}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Top Products by Profit */}
+        {financialData.productProfits.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Top Products by Profit</h4>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={financialData.productProfits.slice(0, 15)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                <XAxis type="number" stroke="#6b7280" style={{ fontSize: '11px' }} />
+                <YAxis type="category" dataKey="name" stroke="#6b7280" style={{ fontSize: '10px' }} width={130} tick={{ fill: '#9ca3af' }} />
+                <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} formatter={(value) => `$${value.toFixed(2)}`} />
+                <Legend />
+                <Bar dataKey="cost" fill="#ef4444" name="Cost" stackId="a" />
+                <Bar dataKey="profit" fill="#22c55e" name="Profit" stackId="a" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Full Product Financial Table */}
+        {financialData.productProfits.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Product Financial Breakdown</h4>
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto batch-scroll">
+              <table className="min-w-max w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-8">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SRG Sale</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Cost</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Profit</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Margin</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {financialData.productProfits.map((p, i) => (
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-3 py-2 text-xs text-gray-400">{i + 1}</td>
+                      <td className="px-3 py-2 font-medium text-gray-900 dark:text-white whitespace-nowrap">{p.name}</td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">${p.srgSale.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right text-red-600 dark:text-red-400">${p.cost.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right text-blue-600 dark:text-blue-400">${p.revenue.toFixed(2)}</td>
+                      <td className={`px-3 py-2 text-right font-semibold ${p.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>${p.profit.toFixed(2)}</td>
+                      <td className={`px-3 py-2 text-right ${p.margin >= 50 ? 'text-green-600 dark:text-green-400 font-bold' : p.margin >= 20 ? 'text-green-600 dark:text-green-400' : p.margin > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>{p.margin.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {financialData.batchRevenue === 0 && financialData.boxTotalValue === 0 && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+            <p className="font-medium">No financial data available</p>
+            <p className="text-sm mt-1">Import batch purchases and box invoices to see financial analytics</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

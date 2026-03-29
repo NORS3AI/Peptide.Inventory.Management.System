@@ -61,6 +61,12 @@ const batchStore = localforage.createInstance({
   description: 'Batch purchase tracking with cost and profit analysis'
 });
 
+const boxStore = localforage.createInstance({
+  name: 'SRGInventory',
+  storeName: 'boxes',
+  description: 'Box inventory tracking - orders, on hand, suppliers, costs'
+});
+
 /**
  * Database service for SRG Inventory System
  * Uses IndexedDB via localforage for client-side data persistence
@@ -667,6 +673,55 @@ export const db = {
   },
 
   // Batch operations (for batch purchase tracking)
+  boxes: {
+    async getAll() {
+      const boxes = [];
+      await boxStore.iterate((value) => {
+        boxes.push(value);
+      });
+      return boxes.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    },
+
+    async get(id) {
+      return await boxStore.getItem(id);
+    },
+
+    async set(id, data) {
+      return await boxStore.setItem(id, {
+        ...data,
+        id,
+        updatedAt: new Date().toISOString()
+      });
+    },
+
+    async update(id, updates) {
+      const existing = await boxStore.getItem(id);
+      if (!existing) throw new Error(`Box ${id} not found`);
+      return await boxStore.setItem(id, {
+        ...existing,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      });
+    },
+
+    async delete(id) {
+      return await boxStore.removeItem(id);
+    },
+
+    async clear() {
+      return await boxStore.clear();
+    },
+
+    async bulkImport(items) {
+      const results = [];
+      for (const item of items) {
+        const id = item.id || `box-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        results.push(await this.set(id, item));
+      }
+      return results;
+    }
+  },
+
   batches: {
     async getAll() {
       const batches = [];
@@ -728,6 +783,7 @@ export const db = {
     await taskStore.clear();
     await minutesStore.clear();
     await batchStore.clear();
+    await boxStore.clear();
   },
 
   async exportData() {
@@ -740,6 +796,7 @@ export const db = {
     const tasks = await this.tasks.getAll();
     const minutes = await this.minutes.getAll();
     const batches = await this.batches.getAll();
+    const boxes = await this.boxes.getAll();
 
     // Export velocity history for all peptides
     const velocityHistory = {};
@@ -763,7 +820,8 @@ export const db = {
         snapshots,
         tasks,
         minutes,
-        batches
+        batches,
+        boxes
       }
     };
   },
@@ -771,7 +829,7 @@ export const db = {
   async importData(exportedData) {
     if (!exportedData.data) throw new Error('Invalid export data format');
 
-    const { peptides, orders, labels, settings, transactions, velocityHistory, snapshots, tasks, minutes, batches } = exportedData.data;
+    const { peptides, orders, labels, settings, transactions, velocityHistory, snapshots, tasks, minutes, batches, boxes } = exportedData.data;
 
     // Import peptides
     if (peptides) {
@@ -841,6 +899,13 @@ export const db = {
     if (batches) {
       for (const batch of batches) {
         await batchStore.setItem(batch.id, batch);
+      }
+    }
+
+    // Import boxes
+    if (boxes) {
+      for (const box of boxes) {
+        await boxStore.setItem(box.id, box);
       }
     }
 
