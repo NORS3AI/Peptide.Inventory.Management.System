@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.156', date: '2026-03-29', title: 'Reports: Inventory Velocity Analysis with top products bar/line/area charts, velocity distribution pie, days-of-supply risk chart, velocity history trends, sortable product table with risk levels' },
   { version: '0.0.155', date: '2026-03-29', title: 'Inventory import accepts Excel (.xlsx/.xls) + CSV; recognizes SKU, Product, Size, On Hand, Velocity, Days Left column headers' },
   { version: '0.0.154', date: '2026-03-28', title: 'Dashboard Batch Overview with Net/Gross/QTY/top products; Reports Batch Analysis with vendor breakdown, margin, sortable product table' },
   { version: '0.0.153', date: '2026-03-28', title: 'Batch table: bigger sleeker scrollbar, full-width columns with smooth horizontal scrolling' },
