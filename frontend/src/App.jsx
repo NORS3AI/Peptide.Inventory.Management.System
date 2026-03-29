@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers } from 'lucide-react';
+import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers, Box as BoxIcon } from 'lucide-react';
 import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
@@ -17,6 +17,8 @@ import Prices from './components/Prices';
 import Daily from './components/Daily';
 import Batch from './components/Batch';
 import BatchCSVUpload from './components/BatchCSVUpload';
+import Boxes from './components/Boxes';
+import BoxCSVUpload from './components/BoxCSVUpload';
 import SettingsModal from './components/SettingsModal';
 import PatchNotesModal from './components/PatchNotesModal';
 import packageJson from '../package.json';
@@ -68,6 +70,10 @@ function App() {
 
   const handleBatchImportComplete = () => {
     setActiveTab('batch');
+  };
+
+  const handleBoxImportComplete = () => {
+    setActiveTab('boxes');
   };
 
   return (
@@ -138,6 +144,12 @@ function App() {
               badge={stats.total}
             />
             <NavButton
+              icon={<BoxIcon className="w-5 h-5" />}
+              label="Boxes"
+              active={activeTab === 'boxes'}
+              onClick={() => setActiveTab('boxes')}
+            />
+            <NavButton
               icon={<Tag className="w-5 h-5" />}
               label="Labeling"
               active={activeTab === 'labeling'}
@@ -194,7 +206,8 @@ function App() {
           <>
             {activeTab === 'dashboard' && <DashboardView stats={stats} peptides={peptides} thresholds={thresholds} onNavigate={setActiveTab} />}
             {activeTab === 'batch' && <BatchView />}
-            {activeTab === 'import' && <ImportView onImportComplete={handleImportComplete} onBatchImportComplete={handleBatchImportComplete} peptides={peptides} onRefresh={refresh} />}
+            {activeTab === 'boxes' && <BoxesView />}
+            {activeTab === 'import' && <ImportView onImportComplete={handleImportComplete} onBatchImportComplete={handleBatchImportComplete} onBoxImportComplete={handleBoxImportComplete} peptides={peptides} onRefresh={refresh} />}
             {activeTab === 'inventory' && (
               <InventoryView
                 peptides={peptides}
@@ -262,6 +275,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
   const [showMinutesModal, setShowMinutesModal] = useState(false);
   const [focusMeetingId, setFocusMeetingId] = useState(null);
   const [batchStats, setBatchStats] = useState(null);
+  const [boxStats, setBoxStats] = useState(null);
 
   // Load all active tasks for dashboard
   useEffect(() => {
@@ -341,6 +355,52 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
       }
     };
     loadBatchStats();
+  }, []);
+
+  // Load box stats for dashboard
+  useEffect(() => {
+    const loadBoxStats = async () => {
+      try {
+        const items = await db.boxes.getAll();
+        if (items.length === 0) { setBoxStats(null); return; }
+
+        let totalOnHand = 0, totalOnOrder = 0, totalValue = 0, totalDailyUsage = 0;
+        const suppliers = new Set();
+        const critical = [];
+
+        items.forEach(item => {
+          const onHand = Number(item.onHand) || 0;
+          const onOrder = Number(item.onOrder) || 0;
+          const dailyUsage = Number(item.dailyUsage) || 0;
+          const costPerUnit = Number(item.costPerUnit) || 0;
+          totalOnHand += onHand;
+          totalOnOrder += onOrder;
+          totalDailyUsage += dailyUsage;
+          totalValue += onHand * costPerUnit;
+          if (item.supplier) suppliers.add(item.supplier);
+
+          const daysLeft = dailyUsage > 0 ? onHand / dailyUsage : null;
+          if (daysLeft !== null && daysLeft <= 14) {
+            critical.push({ name: item.name || '?', daysLeft: Math.round(daysLeft * 10) / 10, onHand, supplier: item.supplier || '-' });
+          }
+        });
+
+        critical.sort((a, b) => a.daysLeft - b.daysLeft);
+
+        setBoxStats({
+          types: items.length,
+          totalOnHand,
+          totalOnOrder,
+          totalDailyUsage,
+          totalValue,
+          suppliers: [...suppliers],
+          critical: critical.slice(0, 5),
+        });
+      } catch (err) {
+        console.error('Failed to load box stats:', err);
+      }
+    };
+    loadBoxStats();
   }, []);
 
   const STATUS_MAP = {
@@ -602,6 +662,76 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
         </div>
       )}
 
+      {/* Boxes Overview */}
+      {boxStats && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <BoxIcon className="w-5 h-5" />
+              Boxes Overview
+            </h3>
+            <button
+              onClick={() => onNavigate('boxes')}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+            >
+              View Boxes
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{boxStats.types}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Box Types</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{boxStats.totalOnHand}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">On Hand</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center border border-blue-200 dark:border-blue-800">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{boxStats.totalOnOrder}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">On Order</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{boxStats.totalDailyUsage}/day</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Daily Usage</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">${boxStats.totalValue.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Inventory Value</p>
+            </div>
+          </div>
+
+          {/* Suppliers */}
+          {boxStats.suppliers.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Suppliers</p>
+              <div className="flex flex-wrap gap-2">
+                {boxStats.suppliers.map(s => (
+                  <span key={s} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Critical - Low Supply */}
+          {boxStats.critical.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">Low Supply Alert</p>
+              <div className="space-y-1.5">
+                {boxStats.critical.map((b, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                    <span className="text-sm text-gray-900 dark:text-white">{b.name}</span>
+                    <span className={`text-sm font-semibold ${b.daysLeft <= 7 ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                      {b.daysLeft} days left
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Daily Tasks Activity Log */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
@@ -822,7 +952,7 @@ function SalesReadyView({ peptides, onRefresh }) {
   );
 }
 
-function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefresh }) {
+function ImportView({ onImportComplete, onBatchImportComplete, onBoxImportComplete, peptides, onRefresh }) {
   const [subTab, setSubTab] = useState('csv');
 
   return (
@@ -833,10 +963,10 @@ function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefre
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-0">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-0 overflow-x-auto">
         <button
           onClick={() => setSubTab('csv')}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
             subTab === 'csv'
               ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
               : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -847,7 +977,7 @@ function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefre
         </button>
         <button
           onClick={() => setSubTab('batch')}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
             subTab === 'batch'
               ? 'border-green-600 text-green-600 dark:border-green-400 dark:text-green-400'
               : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -857,8 +987,19 @@ function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefre
           Import Batch
         </button>
         <button
+          onClick={() => setSubTab('boxes')}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+            subTab === 'boxes'
+              ? 'border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <BoxIcon className="w-4 h-4" />
+          Import Boxes
+        </button>
+        <button
           onClick={() => setSubTab('scanner')}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
             subTab === 'scanner'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -871,6 +1012,7 @@ function ImportView({ onImportComplete, onBatchImportComplete, peptides, onRefre
 
       {subTab === 'csv' && <CSVUpload onImportComplete={onImportComplete} />}
       {subTab === 'batch' && <BatchCSVUpload onImportComplete={onBatchImportComplete} />}
+      {subTab === 'boxes' && <BoxCSVUpload onImportComplete={onBoxImportComplete} />}
       {subTab === 'scanner' && <PickListScanner peptides={peptides} onRefresh={onRefresh} />}
     </div>
   );
@@ -954,6 +1096,18 @@ function DailyView() {
 
 function BatchView() {
   return <Batch />;
+}
+
+function BoxesView() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Boxes</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Track box inventory, orders, suppliers, and costs</p>
+      </div>
+      <Boxes />
+    </div>
+  );
 }
 
 export default App;

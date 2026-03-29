@@ -71,7 +71,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [importMode, setImportMode] = useState('replace');
+  const [importMode, setImportMode] = useState('update');
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
 
@@ -174,17 +174,17 @@ export default function BatchCSVUpload({ onImportComplete }) {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Batch Import Mode</h3>
         <div className="space-y-3">
           <label className="flex items-start space-x-3 cursor-pointer">
-            <input type="radio" name="batchImportMode" value="replace" checked={importMode === 'replace'} onChange={e => setImportMode(e.target.value)} className="mt-1" />
-            <div>
-              <div className="font-medium text-gray-900 dark:text-white">Replace All Batch Data</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Clear existing batch data and import fresh.</div>
-            </div>
-          </label>
-          <label className="flex items-start space-x-3 cursor-pointer">
             <input type="radio" name="batchImportMode" value="update" checked={importMode === 'update'} onChange={e => setImportMode(e.target.value)} className="mt-1" />
             <div>
               <div className="font-medium text-gray-900 dark:text-white">Update Existing</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Match by ID and update; add new items that don't exist.</div>
+            </div>
+          </label>
+          <label className="flex items-start space-x-3 cursor-pointer">
+            <input type="radio" name="batchImportMode" value="replace" checked={importMode === 'replace'} onChange={e => setImportMode(e.target.value)} className="mt-1" />
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Replace All Batch Data</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Clear existing batch data and import fresh.</div>
             </div>
           </label>
         </div>
