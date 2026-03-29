@@ -8,9 +8,6 @@ import { db } from '../lib/db';
 
 export default function Reports({ peptides, orders = [], thresholds }) {
   const [chartType, setChartType] = useState('pie'); // pie, bar, line, area
-  const [velocityChartType, setVelocityChartType] = useState('line'); // line, bar, area
-  const [transactions, setTransactions] = useState([]);
-  const [timeRange, setTimeRange] = useState(30); // days to show
   const [lowStockSort, setLowStockSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [missingReqSort, setMissingReqSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [labelingSort, setLabelingSort] = useState({ field: 'labeledCount', direction: 'asc' });
@@ -42,15 +39,6 @@ export default function Reports({ peptides, orders = [], thresholds }) {
       color: '#e5e7eb' // Bright light gray for items
     }
   };
-
-  // Fetch transactions
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      const allTransactions = await db.transactions.getAll();
-      setTransactions(allTransactions);
-    };
-    fetchTransactions();
-  }, []);
 
   // Fetch batch data
   useEffect(() => {
@@ -545,60 +533,6 @@ export default function Reports({ peptides, orders = [], thresholds }) {
     return { stockData, salesData, COLORS };
   }, [stats]);
 
-  // Velocity data
-  const velocityData = useMemo(() => {
-    if (transactions.length === 0) {
-      return { timeSeriesData: [], productComparisonData: [], topProducts: [] };
-    }
-
-    const salesTransactions = transactions.filter(t => t.type === 'sale');
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - timeRange);
-
-    // Filter transactions within time range
-    const recentTransactions = salesTransactions.filter(t =>
-      new Date(t.date) >= cutoffDate
-    );
-
-    // Group by date for time series
-    const dateGroups = {};
-    recentTransactions.forEach(t => {
-      const date = new Date(t.date).toISOString().split('T')[0];
-      if (!dateGroups[date]) {
-        dateGroups[date] = 0;
-      }
-      dateGroups[date] += t.quantity;
-    });
-
-    const timeSeriesData = Object.keys(dateGroups)
-      .sort()
-      .map(date => ({
-        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        sales: dateGroups[date]
-      }));
-
-    // Group by product for comparison
-    const productGroups = {};
-    salesTransactions.forEach(t => {
-      if (!productGroups[t.peptideId]) {
-        productGroups[t.peptideId] = 0;
-      }
-      productGroups[t.peptideId] += t.quantity;
-    });
-
-    const productComparisonData = Object.keys(productGroups)
-      .map(peptideId => ({
-        name: peptideId,
-        sales: productGroups[peptideId]
-      }))
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 15); // Top 15 products
-
-    const topProducts = productComparisonData.slice(0, 5);
-
-    return { timeSeriesData, productComparisonData, topProducts };
-  }, [transactions, timeRange]);
-
   const handleExportInventory = () => {
     const csvContent = exportToCSV(peptides);
     downloadCSV(csvContent, `srg-inventory-report-${new Date().toISOString().split('T')[0]}.csv`);
@@ -931,180 +865,6 @@ ${stats.needsAttention.map(p =>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      {/* Sales Velocity Charts */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Sales Velocity Tracking
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Track product sales performance and trends over time
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={14}>Last 14 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={60}>Last 60 days</option>
-              <option value={90}>Last 90 days</option>
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setVelocityChartType('line')}
-                className={`p-2 rounded ${
-                  velocityChartType === 'line'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-                title="Line Chart"
-              >
-                <LineChartIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setVelocityChartType('bar')}
-                className={`p-2 rounded ${
-                  velocityChartType === 'bar'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-                title="Bar Chart"
-              >
-                <BarChart3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setVelocityChartType('area')}
-                className={`p-2 rounded ${
-                  velocityChartType === 'area'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-                title="Area Chart"
-              >
-                <AreaChartIcon className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {transactions.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-2">No transaction data yet</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              Start recording sales to see velocity trends
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Time Series Chart */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                Sales Over Time
-              </h4>
-              {velocityData.timeSeriesData.length === 0 ? (
-                <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                  No sales in selected time range
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  {velocityChartType === 'line' ? (
-                    <LineChart data={velocityData.timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                      <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} />
-                      <Legend />
-                      <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} name="Units Sold" />
-                    </LineChart>
-                  ) : velocityChartType === 'bar' ? (
-                    <BarChart data={velocityData.timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                      <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} />
-                      <Legend />
-                      <Bar dataKey="sales" fill="#3b82f6" name="Units Sold" />
-                    </BarChart>
-                  ) : (
-                    <AreaChart data={velocityData.timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                      <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} />
-                      <Legend />
-                      <Area type="monotone" dataKey="sales" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} name="Units Sold" />
-                    </AreaChart>
-                  )}
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            {/* Product Comparison Chart */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                Top Products by Sales
-              </h4>
-              {velocityData.productComparisonData.length === 0 ? (
-                <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                  No product sales data
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={velocityData.productComparisonData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                    <XAxis type="number" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                    <YAxis type="category" dataKey="name" stroke="#6b7280" style={{ fontSize: '12px' }} width={100} />
-                    <Tooltip contentStyle={tooltipStyle.contentStyle} labelStyle={tooltipStyle.labelStyle} itemStyle={tooltipStyle.itemStyle} />
-                    <Legend />
-                    <Bar dataKey="sales" fill="#10b981" name="Total Units Sold" />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Top Performers Summary */}
-        {velocityData.topProducts.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Top 5 Best Sellers (All Time)
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {velocityData.topProducts.map((product, index) => (
-                <div
-                  key={product.name}
-                  className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      #{index + 1}
-                    </span>
-                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate" title={product.name}>
-                    {product.name}
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                    {product.sales}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    units sold
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Inventory Velocity Analysis */}
