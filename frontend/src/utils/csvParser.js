@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 /**
  * CSV parsing utilities for SRG Inventory System
@@ -11,39 +12,49 @@ import Papa from 'papaparse';
  * @param {object} options - Parsing options
  * @returns {Promise<array>} Parsed and validated peptide data
  */
+function isExcelFile(filename) {
+  const ext = filename.toLowerCase();
+  return ext.endsWith('.xlsx') || ext.endsWith('.xls');
+}
+
 export async function parseInventoryCSV(file, options = {}) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => header.replace(/^\uFEFF/, '').replace(/^["']+|["']+$/g, '').trim(),
-      complete: (results) => {
-        try {
-          const peptides = transformPeptideData(results.data, options);
-          const validation = validatePeptideData(peptides);
+  let rawData;
 
-          if (!validation.valid) {
-            reject(new Error(`Validation failed: ${validation.errors.join(', ')}`));
-            return;
-          }
-
-          resolve({
-            peptides,
-            meta: {
-              totalRows: results.data.length,
-              validRows: peptides.length,
-              errors: results.errors
-            }
-          });
-        } catch (error) {
-          reject(error);
-        }
-      },
-      error: (error) => {
-        reject(error);
-      }
+  if (isExcelFile(file.name)) {
+    // Parse Excel file using SheetJS
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  } else {
+    // Parse CSV file using PapaParse
+    rawData = await new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header) => header.replace(/^\uFEFF/, '').replace(/^["']+|["']+$/g, '').trim(),
+        complete: (results) => resolve(results.data),
+        error: (error) => reject(error),
+      });
     });
-  });
+  }
+
+  const peptides = transformPeptideData(rawData, options);
+  const validation = validatePeptideData(peptides);
+
+  if (!validation.valid) {
+    throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+  }
+
+  return {
+    peptides,
+    meta: {
+      totalRows: rawData.length,
+      validRows: peptides.length,
+      errors: []
+    }
+  };
 }
 
 /**
@@ -99,6 +110,7 @@ export function transformPeptideData(rawData, options = {}) {
 
         // Operational fields
         velocity: extractField(row, fieldMapping.velocity),
+        daysLeft: extractField(row, fieldMapping.daysLeft),
         notes: extractField(row, fieldMapping.notes),
         supplier: extractField(row, fieldMapping.supplier),
         location: extractField(row, fieldMapping.location),
@@ -197,6 +209,7 @@ export function getDefaultFieldMapping() {
 
     // Operational
     velocity: ['Velocity', 'Usage Rate', 'Demand'],
+    daysLeft: ['Days Left', 'Days Remaining', 'Days Supply'],
     notes: ['Status', 'Notes', 'Comments', 'Remarks'],
     supplier: ['Supplier', 'Vendor', 'Manufacturer', 'Lab'],
     location: ['Location', 'Warehouse', 'Storage', 'Bin']
@@ -290,6 +303,7 @@ export function exportToCSV(peptides) {
     orderedDate: 'Incoming Arrival',
     orderedQty: 'Incoming Qty',
     velocity: 'Velocity',
+    daysLeft: 'Days Left',
     notes: 'Status',
     supplier: 'Supplier',
     location: 'Location',

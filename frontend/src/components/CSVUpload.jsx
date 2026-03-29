@@ -45,8 +45,9 @@ export default function CSVUpload({ onImportComplete }) {
   };
 
   const handleFile = async (file) => {
-    if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
+      setError('Please upload a CSV or Excel (.xlsx, .xls) file');
       return;
     }
 
@@ -243,7 +244,7 @@ export default function CSVUpload({ onImportComplete }) {
         <input
           type="file"
           id="csv-upload"
-          accept=".csv"
+          accept=".csv,.xlsx,.xls"
           onChange={handleChange}
           className="hidden"
           disabled={importing}
@@ -253,7 +254,7 @@ export default function CSVUpload({ onImportComplete }) {
 
         <div className="space-y-2">
           <p className="text-lg font-medium text-gray-900 dark:text-white">
-            {importing ? 'Importing...' : 'Drop your CSV file here'}
+            {importing ? 'Importing...' : 'Drop your CSV or Excel file here'}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             or{' '}
@@ -442,10 +443,11 @@ export default function CSVUpload({ onImportComplete }) {
 
       {/* Instructions */}
       <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">CSV Format Requirements</h3>
+        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Import Format Requirements</h3>
         <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
-          <li>Required columns: Product, SKU, Quantity</li>
-          <li>Optional columns: Size, Batch Number, Purity, Velocity, Status, etc.</li>
+          <li>Accepts CSV (.csv) and Excel (.xlsx, .xls) files</li>
+          <li>Required columns: Product (or ID), SKU (or Name)</li>
+          <li>Supported columns: SKU, Product, Size, On Hand, Velocity, Days Left, Quantity, Batch Number, Purity, Status, etc.</li>
           <li>First row must contain headers</li>
           <li>All Product IDs must be unique</li>
           <li>Download the sample CSV to see the correct format</li>
