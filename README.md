@@ -5,7 +5,7 @@
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-🔗 **[Live Site: Peptide Inventory Management System](https://nors3ai.github.io/peptide.inventory.management.system/)**
+🔗 **[Live Site: Peptide Inventory Management System](https://nors3ai.github.io/Peptide.Inventory.Management.System/)**
 
 PIMS is a client-side inventory management system for peptide manufacturing and distribution. It streamlines the entire peptide lifecycle from ordering through testing to labeling and sales readiness.
 
