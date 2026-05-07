@@ -4,6 +4,7 @@ import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useBranding } from './hooks/useBranding';
 import { ToastProvider } from './components/Toast';
 import { db } from './lib/db';
 import CSVUpload from './components/CSVUpload';
@@ -29,6 +30,7 @@ function App() {
     return localStorage.getItem('activeTab') || 'dashboard';
   });
   const { isDark, toggle } = useDarkMode();
+  const { branding } = useBranding();
   const [orders, setOrders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
@@ -84,10 +86,14 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              {branding.appLogo ? (
+                <img src={branding.appLogo} alt="" className="w-8 h-8 object-contain" />
+              ) : (
+                <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              )}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">PIMS</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Peptide Inventory Management System</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{branding.appTitle}</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{branding.appSubtitle}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">

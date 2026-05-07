@@ -1,7 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
+import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
+
+const MAX_IMAGE_BYTES = 1024 * 1024; // 1 MB cap on logo/icon uploads
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const FONT_SIZES = [12, 13, 14, 15, 16, 18, 20, 22, 24];
 
@@ -15,7 +27,55 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [newVendorInput, setNewVendorInput] = useState('');
   const modalRef = useRef(null);
   const fileInputRef = useRef(null);
+  const logoInputRef = useRef(null);
+  const iconInputRef = useRef(null);
   const { success, error: showError } = useToast();
+  const { branding, setBranding, resetBranding } = useBranding();
+  const [titleDraft, setTitleDraft] = useState(branding.appTitle);
+  const [subtitleDraft, setSubtitleDraft] = useState(branding.appSubtitle);
+  const [browserTitleDraft, setBrowserTitleDraft] = useState(branding.browserTitle);
+
+  useEffect(() => {
+    setTitleDraft(branding.appTitle);
+    setSubtitleDraft(branding.appSubtitle);
+    setBrowserTitleDraft(branding.browserTitle);
+  }, [branding.appTitle, branding.appSubtitle, branding.browserTitle]);
+
+  const saveBrandingText = async () => {
+    await setBranding({
+      appTitle: titleDraft.trim() || DEFAULT_BRANDING.appTitle,
+      appSubtitle: subtitleDraft.trim() || DEFAULT_BRANDING.appSubtitle,
+      browserTitle: browserTitleDraft.trim() || DEFAULT_BRANDING.browserTitle,
+    });
+    success('Branding text saved');
+  };
+
+  const handleImageUpload = async (event, key) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showError('Image must be 1 MB or smaller');
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataURL(file);
+      await setBranding({ [key]: dataUrl });
+      success(key === 'appLogo' ? 'Logo updated' : 'Browser icon updated');
+    } catch (err) {
+      console.error(err);
+      showError('Failed to read image');
+    }
+  };
+
+  const clearBrandingImage = async (key) => {
+    await setBranding({ [key]: '' });
+    success(key === 'appLogo' ? 'Logo reset' : 'Browser icon reset');
+  };
 
   // Apply font size to document
   useEffect(() => {
@@ -243,6 +303,125 @@ export default function SettingsModal({ isOpen, onClose }) {
                 className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
               >
                 Reset to default (16pt)
+              </button>
+            </div>
+
+            {/* Branding */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <ImageIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Branding</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Customize the app title, subtitle, browser tab title, logo, and favicon. Saved per-browser via IndexedDB.
+              </p>
+
+              {/* Text fields */}
+              <div className="space-y-3 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">App Title</label>
+                  <input
+                    type="text"
+                    value={titleDraft}
+                    onChange={e => setTitleDraft(e.target.value)}
+                    placeholder={DEFAULT_BRANDING.appTitle}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">App Subtitle</label>
+                  <input
+                    type="text"
+                    value={subtitleDraft}
+                    onChange={e => setSubtitleDraft(e.target.value)}
+                    placeholder={DEFAULT_BRANDING.appSubtitle}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Browser Tab Title</label>
+                  <input
+                    type="text"
+                    value={browserTitleDraft}
+                    onChange={e => setBrowserTitleDraft(e.target.value)}
+                    placeholder={DEFAULT_BRANDING.browserTitle}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <button
+                  onClick={saveBrandingText}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                >
+                  Save Text
+                </button>
+              </div>
+
+              {/* Logo + Icon */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">App Logo</label>
+                  <div className="flex items-center gap-3 mb-2">
+                    {branding.appLogo ? (
+                      <img src={branding.appLogo} alt="Logo preview" className="w-12 h-12 object-contain rounded border border-gray-200 dark:border-gray-700 bg-white" />
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 text-xs">None</div>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'appLogo')}
+                        className="hidden"
+                      />
+                      <button onClick={() => logoInputRef.current?.click()} className="px-3 py-1.5 bg-gray-900 dark:bg-blue-600 text-white text-xs rounded-md hover:bg-gray-800 dark:hover:bg-blue-700">
+                        Upload
+                      </button>
+                      {branding.appLogo && (
+                        <button onClick={() => clearBrandingImage('appLogo')} className="px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:underline text-left">
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Browser Icon</label>
+                  <div className="flex items-center gap-3 mb-2">
+                    {branding.browserIcon ? (
+                      <img src={branding.browserIcon} alt="Icon preview" className="w-12 h-12 object-contain rounded border border-gray-200 dark:border-gray-700 bg-white" />
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 text-xs">None</div>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <input
+                        ref={iconInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'browserIcon')}
+                        className="hidden"
+                      />
+                      <button onClick={() => iconInputRef.current?.click()} className="px-3 py-1.5 bg-gray-900 dark:bg-blue-600 text-white text-xs rounded-md hover:bg-gray-800 dark:hover:bg-blue-700">
+                        Upload
+                      </button>
+                      {branding.browserIcon && (
+                        <button onClick={() => clearBrandingImage('browserIcon')} className="px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:underline text-left">
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">PNG, JPG, or SVG up to 1 MB. Square images render best.</p>
+
+              <button
+                onClick={async () => { await resetBranding(); success('Branding reset to defaults'); }}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset all branding to defaults
               </button>
             </div>
 
