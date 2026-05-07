@@ -86,8 +86,8 @@ function App() {
             <div className="flex items-center space-x-3">
               <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Peptide Inventory</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Management System</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">PIMS</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Peptide Inventory Management System</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">

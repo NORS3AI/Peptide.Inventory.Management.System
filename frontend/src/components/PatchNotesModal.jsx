@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.164', date: '2026-05-07', title: 'Header: title is "PIMS", subtitle is "Peptide Inventory Management System"' },
   { version: '0.0.163', date: '2026-05-07', title: 'Match Vite base to canonical repo casing for GitHub Pages, set browser tab title to PIMS' },
   { version: '0.0.162', date: '2026-05-07', title: 'CLAUDE.md: switch branch strategy to direct-to-Main (no claude/<slug> branches, no PR flow)' },
   { version: '0.0.161', date: '2026-05-07', title: 'Rebrand README to PIMS (Peptide Inventory Management System) with neutral copy and live URL' },
