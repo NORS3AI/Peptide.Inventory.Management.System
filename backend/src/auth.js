@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 // JWT secret - in production, this should be in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'srg-inventory-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'peptide-inventory-secret-change-in-production';
 
 // Default password hash - password is "admin" by default
 // In production, change this via environment variable

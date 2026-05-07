@@ -1,17 +1,17 @@
-# SRG - Peptide Inventory Management System
+# PIMS — Peptide Inventory Management System
 
-[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://nors3ai.github.io/SRG-Inventory/)
-[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF)](https://vitejs.dev/)
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://nors3ai.github.io/peptide.inventory.management.system/)
+[![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-🔗 **[Live Demo: https://nors3ai.github.io/SRG-Inventory/](https://nors3ai.github.io/SRG-Inventory/)**
+🔗 **[Live Demo: https://nors3ai.github.io/peptide.inventory.management.system/](https://nors3ai.github.io/peptide.inventory.management.system/)**
 
-A comprehensive inventory management solution designed specifically for SRG, a peptide manufacturing and distribution company. This system streamlines the entire peptide lifecycle from ordering through testing to labeling and sales readiness.
+PIMS is a client-side inventory management system for peptide manufacturing and distribution. It streamlines the entire peptide lifecycle from ordering through testing to labeling and sales readiness.
 
 ## 🌟 Overview
 
-The SRG Inventory System manages three critical aspects of peptide operations:
+PIMS manages three critical aspects of peptide operations:
 
 1. **Inventory Tracking** - Real-time stock levels with color-coded visual indicators
 2. **Lifecycle Management** - Complete tracking from order placement through testing and labeling
@@ -61,19 +61,18 @@ Track every stage of your peptide journey:
 - **Scroll Controls** - Navigate through long lists with up/down buttons
 
 ### ✅ Sales Readiness Validation
-Automated three-point check system ensures peptides can only be sold when they have:
+Automated check system ensures peptides can only be sold when they have:
 1. ✓ Purity test results
 2. ✓ Net weight confirmation
-3. ✓ Applied label
 
 **Sales Ready Dashboard** shows:
 - Total sales-ready products
 - Blocked products with missing requirements
-- Breakdown of missing requirements (purity, weight, label)
+- Breakdown of missing requirements (purity, weight)
 
 ### 📈 Reports & Analytics
 - **Comprehensive Reports** - Detailed inventory analysis
-- **Sales Velocity Tracking** - Historical velocity data (up to 10 previous imports)
+- **Inventory Velocity Tracking** - Historical velocity data and trend tracking
 - **Transaction Tracking** - Record sales and inventory movements
 - **Export Capabilities** - Export to CSV format
 - **Charts & Visualizations** - Visual progress indicators
@@ -89,8 +88,8 @@ Automated three-point check system ensures peptides can only be sold when they h
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18.3** - Modern UI library with hooks
-- **Vite 5.4** - Lightning-fast build tool and dev server
+- **React 19** - Modern UI library with hooks
+- **Vite 7** - Lightning-fast build tool and dev server
 - **Tailwind CSS** - Utility-first CSS framework
 - **Lucide React** - Beautiful icon library
 - **PapaParse** - CSV parsing library
@@ -100,8 +99,7 @@ Automated three-point check system ensures peptides can only be sold when they h
 - **LocalStorage** - User preferences and settings
 
 ### Build & Deploy
-- **GitHub Actions** - Automated CI/CD
-- **GitHub Pages** - Free hosting for static sites
+- **GitHub Pages** - Free hosting for static sites from the `docs/` folder
 
 ## 📖 Usage
 
@@ -129,7 +127,7 @@ Automated three-point check system ensures peptides can only be sold when they h
 ### Checking Sales Readiness
 
 1. Navigate to **Sales Ready** tab
-2. View products that pass the three-point check
+2. View products that pass the readiness check
 3. See which requirements are missing for blocked items
 4. Filter by Ready, Blocked, or All items
 
@@ -148,18 +146,18 @@ Automated three-point check system ensures peptides can only be sold when they h
 1. Go to **Reports** tab
 2. View comprehensive inventory analysis
 3. Export data to CSV
-4. Track sales velocity and trends
+4. Track inventory velocity and trends
 
 ## 🎯 Business Context
 
-SRG manufactures and distributes research peptides. The company:
-- Receives peptide shipments in glass vials from external labs
+PIMS serves peptide manufacturers and distributors who:
+- Receive peptide shipments in glass vials from external labs
 - Must send each batch for purity and weight testing
 - Can only sell peptides that have passed testing and been properly labeled
-- Needs to maintain optimal inventory levels across multiple peptide types
-- Requires quick visual identification of stock issues and operational bottlenecks
+- Need to maintain optimal inventory levels across multiple peptide types
+- Require quick visual identification of stock issues and operational bottlenecks
 
-This system ensures compliance, streamlines operations, and provides real-time visibility into inventory status.
+PIMS streamlines operations and provides real-time visibility into inventory status.
 
 ## 🔒 Data Storage
 
@@ -185,12 +183,11 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Contact
+## 📞 Links
 
-**SRG**
 - GitHub: [@NORS3AI](https://github.com/NORS3AI)
-- Project Link: [https://github.com/NORS3AI/SRG-Inventory](https://github.com/NORS3AI/SRG-Inventory)
-- Live Demo: [https://nors3ai.github.io/SRG-Inventory/](https://nors3ai.github.io/SRG-Inventory/)
+- Project Link: [https://github.com/NORS3AI/peptide.inventory.management.system](https://github.com/NORS3AI/peptide.inventory.management.system)
+- Live Demo: [https://nors3ai.github.io/peptide.inventory.management.system/](https://nors3ai.github.io/peptide.inventory.management.system/)
 
 ## 🙏 Acknowledgments
 
@@ -224,8 +221,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Sales Readiness Checklist
 - [ ] Purity test completed ✓
 - [ ] Net weight verified ✓
-- [ ] Label applied ✓
-- [ ] All three = **Ready to sell** ✅
+- [ ] Both = **Ready to sell** ✅
 
 ### Keyboard Shortcuts
 - `Ctrl/Cmd + Shift + R` - Hard refresh (clear cache)
@@ -234,10 +230,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: February 8, 2026
 **Status**: ✅ Production Ready
-
----
-
-Made with ❤️ for SRG

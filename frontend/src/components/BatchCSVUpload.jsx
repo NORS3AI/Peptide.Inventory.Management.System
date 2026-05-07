@@ -18,7 +18,7 @@ const COLUMN_MAP = {
   'comp1': 'comp1',
   'comp2': 'comp2',
   'comp3': 'comp3',
-  'srg sale': 'srgSale',
+  'sale price': 'salePrice',
   'profit/vial $': 'profitPerVial_override',
   'profit/vial %': 'profitPerVialPct_override',
   'profit/batch': 'profitPerBatch_override',
@@ -150,7 +150,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
   };
 
   const handleDownloadSample = () => {
-    const headers = ['#', 'Vendor', 'ID', 'Name', 'MG/ML', '$/Vial', '$/Box', 'QTY Purchased', 'Total/Qty', 'COMP1', 'COMP2', 'COMP3', 'SRG Sale', 'Profit/Vial $', 'Profit/Vial %', 'Profit/Batch'];
+    const headers = ['#', 'Vendor', 'ID', 'Name', 'MG/ML', '$/Vial', '$/Box', 'QTY Purchased', 'Total/Qty', 'COMP1', 'COMP2', 'COMP3', 'Sale Price', 'Profit/Vial $', 'Profit/Vial %', 'Profit/Batch'];
     const sample = [
       ['1', 'Belgium', 'BPC-157', 'BPC-157 5mg', '5mg', '$3.50', '$35.00', '20', '$70.00', '$45.00', '$42.00', '$48.00', '$44.99', '$41.49', '1185.4%', '$829.80'],
       ['2', 'Belgium', 'TB-500', 'Thymosin Beta-4 5mg', '5mg', '$4.00', '$40.00', '10', '$40.00', '$55.00', '$50.00', '$52.00', '$49.99', '$45.99', '1149.8%', '$459.90'],
@@ -160,7 +160,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'srg-batch-sample.csv';
+    a.download = 'peptide-batch-sample.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -287,7 +287,7 @@ export default function BatchCSVUpload({ onImportComplete }) {
         <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
           <li>Accepts CSV (.csv) and Excel (.xlsx, .xls) files</li>
           <li>Required columns: #, Vendor, ID, Name, MG/ML, $/Box, QTY Purchased</li>
-          <li>Optional: $/Vial, Total/Qty, COMP1-3, SRG Sale, Profit columns</li>
+          <li>Optional: $/Vial, Total/Qty, COMP1-3, Sale Price, Profit columns</li>
           <li>Calculated fields ($/Vial, Total/Qty, Profit) auto-compute if not provided</li>
           <li>Download the sample CSV to see the correct format</li>
         </ul>
