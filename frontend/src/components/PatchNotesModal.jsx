@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.161', date: '2026-05-07', title: 'Rebrand README to PIMS (Peptide Inventory Management System) with neutral copy and live URL' },
   { version: '0.0.160', date: '2026-05-07', title: 'Remove legacy company branding from app, docs, IndexedDB namespace, auth token, sample IDs, and deploy paths' },
   { version: '0.0.159', date: '2026-03-29', title: 'Remove Sales Velocity Tracking from Reports, keep Inventory Velocity Analysis' },
   { version: '0.0.158', date: '2026-03-29', title: 'Batch Purchases export to CSV, re-import support for exported files, fix Import sub-tab header wrapping instead of scrolling' },
