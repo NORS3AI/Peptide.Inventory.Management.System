@@ -1,12 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers, Box as BoxIcon, ShoppingCart } from 'lucide-react';
+import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers, Box as BoxIcon, ShoppingCart, LogOut, UserCircle } from 'lucide-react';
 import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useBranding } from './hooks/useBranding';
+import { useAuth } from './hooks/useAuth';
 import { ToastProvider } from './components/Toast';
 import { db } from './lib/db';
+import Login from './components/Login';
+import SetupWizard from './components/SetupWizard';
+import Accounts from './components/Accounts';
 import CSVUpload from './components/CSVUpload';
 import PickListScanner from './components/PickListScanner';
 import InventoryTable from './components/InventoryTable';
@@ -32,6 +36,7 @@ function App() {
   });
   const { isDark, toggle } = useDarkMode();
   const { branding } = useBranding();
+  const auth = useAuth();
   const [orders, setOrders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
@@ -49,6 +54,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
+
+  // If the user lacks permission for the current tab, fall back to the first accessible tab
+  useEffect(() => {
+    if (!auth.currentUser || auth.loading) return;
+    if (auth.can(activeTab)) return;
+    const fallbackOrder = ['dashboard', 'inventory', 'reports', 'woocommerce', 'accounts'];
+    const next = fallbackOrder.find(k => auth.can(k));
+    if (next) setActiveTab(next);
+  }, [auth.currentUser, auth.loading, auth.permissions, activeTab]);
 
   // Load orders
   useEffect(() => {
@@ -79,6 +93,32 @@ function App() {
     setActiveTab('boxes');
   };
 
+  if (auth.loading) {
+    return (
+      <ToastProvider>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500">
+          Loading…
+        </div>
+      </ToastProvider>
+    );
+  }
+
+  if (!auth.hasUsers) {
+    return (
+      <ToastProvider>
+        <SetupWizard />
+      </ToastProvider>
+    );
+  }
+
+  if (!auth.currentUser) {
+    return (
+      <ToastProvider>
+        <Login />
+      </ToastProvider>
+    );
+  }
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors overflow-x-hidden">
@@ -98,6 +138,16 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
+              {auth.currentRole && (
+                <span
+                  className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium text-white"
+                  style={{ backgroundColor: auth.currentRole.color || '#6b7280' }}
+                  title={`Signed in as ${auth.currentUser.username}`}
+                >
+                  <UserCircle className="w-3.5 h-3.5" />
+                  {auth.currentUser.username} · {auth.currentRole.name}
+                </span>
+              )}
               <button
                 onClick={() => setShowSettings(true)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -117,6 +167,14 @@ function App() {
                 )}
               </button>
               <button
+                onClick={() => { if (window.confirm('Sign out?')) auth.logout(); }}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+              <button
                 onClick={() => setShowPatchNotes(true)}
                 className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer font-medium"
               >
@@ -131,79 +189,45 @@ function App() {
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-4 sm:space-x-8 min-w-max">
-            <NavButton
-              icon={<BarChart3 className="w-5 h-5" />}
-              label="Dashboard"
-              active={activeTab === 'dashboard'}
-              onClick={() => setActiveTab('dashboard')}
-            />
-            <NavButton
-              icon={<Layers className="w-5 h-5" />}
-              label="Batch"
-              active={activeTab === 'batch'}
-              onClick={() => setActiveTab('batch')}
-            />
-            <NavButton
-              icon={<Package className="w-5 h-5" />}
-              label="Inventory"
-              active={activeTab === 'inventory'}
-              onClick={() => setActiveTab('inventory')}
-              badge={stats.total}
-            />
-            <NavButton
-              icon={<BoxIcon className="w-5 h-5" />}
-              label="Boxes"
-              active={activeTab === 'boxes'}
-              onClick={() => setActiveTab('boxes')}
-            />
-            <NavButton
-              icon={<Tag className="w-5 h-5" />}
-              label="Labeling"
-              active={activeTab === 'labeling'}
-              onClick={() => setActiveTab('labeling')}
-            />
-            <NavButton
-              icon={<CheckCircle className="w-5 h-5" />}
-              label="Sales Ready"
-              active={activeTab === 'sales'}
-              onClick={() => setActiveTab('sales')}
-            />
-            <NavButton
-              icon={<FileText className="w-5 h-5" />}
-              label="Reports"
-              active={activeTab === 'reports'}
-              onClick={() => setActiveTab('reports')}
-            />
-            <NavButton
-              icon={<DollarSign className="w-5 h-5" />}
-              label="Prices"
-              active={activeTab === 'prices'}
-              onClick={() => setActiveTab('prices')}
-            />
-            <NavButton
-              icon={<GitCompareArrows className="w-5 h-5" />}
-              label="Compare"
-              active={activeTab === 'compare'}
-              onClick={() => setActiveTab('compare')}
-            />
-            <NavButton
-              icon={<ClipboardList className="w-5 h-5" />}
-              label="Daily"
-              active={activeTab === 'daily'}
-              onClick={() => setActiveTab('daily')}
-            />
-            <NavButton
-              icon={<ShoppingCart className="w-5 h-5" />}
-              label="WooCommerce"
-              active={activeTab === 'woocommerce'}
-              onClick={() => setActiveTab('woocommerce')}
-            />
-            <NavButton
-              icon={<Upload className="w-5 h-5" />}
-              label="Import CSV"
-              active={activeTab === 'import'}
-              onClick={() => setActiveTab('import')}
-            />
+            {auth.can('dashboard') && (
+              <NavButton icon={<BarChart3 className="w-5 h-5" />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+            )}
+            {auth.can('batch') && (
+              <NavButton icon={<Layers className="w-5 h-5" />} label="Batch" active={activeTab === 'batch'} onClick={() => setActiveTab('batch')} />
+            )}
+            {auth.can('inventory') && (
+              <NavButton icon={<Package className="w-5 h-5" />} label="Inventory" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} badge={stats.total} />
+            )}
+            {auth.can('boxes') && (
+              <NavButton icon={<BoxIcon className="w-5 h-5" />} label="Boxes" active={activeTab === 'boxes'} onClick={() => setActiveTab('boxes')} />
+            )}
+            {auth.can('labeling') && (
+              <NavButton icon={<Tag className="w-5 h-5" />} label="Labeling" active={activeTab === 'labeling'} onClick={() => setActiveTab('labeling')} />
+            )}
+            {auth.can('sales') && (
+              <NavButton icon={<CheckCircle className="w-5 h-5" />} label="Sales Ready" active={activeTab === 'sales'} onClick={() => setActiveTab('sales')} />
+            )}
+            {auth.can('reports') && (
+              <NavButton icon={<FileText className="w-5 h-5" />} label="Reports" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
+            )}
+            {auth.can('prices') && (
+              <NavButton icon={<DollarSign className="w-5 h-5" />} label="Prices" active={activeTab === 'prices'} onClick={() => setActiveTab('prices')} />
+            )}
+            {auth.can('compare') && (
+              <NavButton icon={<GitCompareArrows className="w-5 h-5" />} label="Compare" active={activeTab === 'compare'} onClick={() => setActiveTab('compare')} />
+            )}
+            {auth.can('daily') && (
+              <NavButton icon={<ClipboardList className="w-5 h-5" />} label="Daily" active={activeTab === 'daily'} onClick={() => setActiveTab('daily')} />
+            )}
+            {auth.can('woocommerce') && (
+              <NavButton icon={<ShoppingCart className="w-5 h-5" />} label="WooCommerce" active={activeTab === 'woocommerce'} onClick={() => setActiveTab('woocommerce')} />
+            )}
+            {auth.can('import') && (
+              <NavButton icon={<Upload className="w-5 h-5" />} label="Import CSV" active={activeTab === 'import'} onClick={() => setActiveTab('import')} />
+            )}
+            {auth.can('accounts') && (
+              <NavButton icon={<Users className="w-5 h-5" />} label="Accounts" active={activeTab === 'accounts'} onClick={() => setActiveTab('accounts')} />
+            )}
           </div>
         </div>
       </nav>
@@ -237,6 +261,7 @@ function App() {
             {activeTab === 'compare' && <CompareView peptides={peptides} />}
             {activeTab === 'daily' && <DailyView />}
             {activeTab === 'woocommerce' && <WooCommerce onOpenSettings={() => setShowSettings(true)} />}
+            {activeTab === 'accounts' && <Accounts />}
           </>
         )}
       </main>

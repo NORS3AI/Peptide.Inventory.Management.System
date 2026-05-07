@@ -85,6 +85,18 @@ const wcCustomerStore = localforage.createInstance({
   description: 'WooCommerce customers cache'
 });
 
+const userStore = localforage.createInstance({
+  name: 'PeptideInventory',
+  storeName: 'users',
+  description: 'Application user accounts (UX-gate auth)'
+});
+
+const roleStore = localforage.createInstance({
+  name: 'PeptideInventory',
+  storeName: 'roles',
+  description: 'Role definitions with permissions and color'
+});
+
 /**
  * Database service for Peptide Inventory System
  * Uses IndexedDB via localforage for client-side data persistence
@@ -789,6 +801,55 @@ export const db = {
     }
   },
 
+  // Users (client-side auth)
+  users: {
+    async getAll() {
+      const items = [];
+      await userStore.iterate((value) => { items.push(value); });
+      return items.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+    },
+    async get(id) { return await userStore.getItem(id); },
+    async findByUsername(username) {
+      let found = null;
+      const target = (username || '').trim().toLowerCase();
+      await userStore.iterate((value) => {
+        if ((value.username || '').toLowerCase() === target) {
+          found = value;
+          return value;
+        }
+      });
+      return found;
+    },
+    async set(id, data) {
+      return await userStore.setItem(id, { ...data, id, updatedAt: new Date().toISOString() });
+    },
+    async delete(id) { return await userStore.removeItem(id); },
+    async clear() { return await userStore.clear(); },
+    async count() {
+      let n = 0;
+      await userStore.iterate(() => { n += 1; });
+      return n;
+    },
+  },
+
+  // Roles (with color and permissions)
+  roles: {
+    async getAll() {
+      const items = [];
+      await roleStore.iterate((value) => { items.push(value); });
+      return items.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    },
+    async get(id) { return await roleStore.getItem(id); },
+    async set(id, data) { return await roleStore.setItem(id, { ...data, id, updatedAt: new Date().toISOString() }); },
+    async delete(id) { return await roleStore.removeItem(id); },
+    async clear() { return await roleStore.clear(); },
+    async count() {
+      let n = 0;
+      await roleStore.iterate(() => { n += 1; });
+      return n;
+    },
+  },
+
   // WooCommerce cache (orders, products, customers)
   woocommerce: {
     async _allFromStore(store) {
@@ -836,6 +897,8 @@ export const db = {
     await wcOrderStore.clear();
     await wcProductStore.clear();
     await wcCustomerStore.clear();
+    await userStore.clear();
+    await roleStore.clear();
   },
 
   async exportData() {
