@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers, Box as BoxIcon } from 'lucide-react';
+import { Package, Upload, CheckCircle, BarChart3, Moon, Sun, FileText, Tag, Settings, ArrowLeft, ArrowUpDown, GitCompareArrows, ScanLine, DollarSign, ClipboardList, Clock, AlertTriangle, Users, Layers, Box as BoxIcon, ShoppingCart } from 'lucide-react';
 import Minutes from './components/Minutes';
 import { calculateStockStatus } from './utils/stockStatus';
 import { useInventory } from './hooks/useInventory';
@@ -20,6 +20,7 @@ import Batch from './components/Batch';
 import BatchCSVUpload from './components/BatchCSVUpload';
 import Boxes from './components/Boxes';
 import BoxCSVUpload from './components/BoxCSVUpload';
+import WooCommerce from './components/WooCommerce';
 import SettingsModal from './components/SettingsModal';
 import PatchNotesModal from './components/PatchNotesModal';
 import packageJson from '../package.json';
@@ -192,6 +193,12 @@ function App() {
               onClick={() => setActiveTab('daily')}
             />
             <NavButton
+              icon={<ShoppingCart className="w-5 h-5" />}
+              label="WooCommerce"
+              active={activeTab === 'woocommerce'}
+              onClick={() => setActiveTab('woocommerce')}
+            />
+            <NavButton
               icon={<Upload className="w-5 h-5" />}
               label="Import CSV"
               active={activeTab === 'import'}
@@ -229,6 +236,7 @@ function App() {
             {activeTab === 'prices' && <PricesView peptides={peptides} />}
             {activeTab === 'compare' && <CompareView peptides={peptides} />}
             {activeTab === 'daily' && <DailyView />}
+            {activeTab === 'woocommerce' && <WooCommerce onOpenSettings={() => setShowSettings(true)} />}
           </>
         )}
       </main>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2 } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
+import { useWooCommerce } from '../hooks/useWooCommerce';
 
 const MAX_IMAGE_BYTES = 1024 * 1024; // 1 MB cap on logo/icon uploads
 
@@ -31,6 +32,40 @@ export default function SettingsModal({ isOpen, onClose }) {
   const iconInputRef = useRef(null);
   const { success, error: showError } = useToast();
   const { branding, setBranding, resetBranding } = useBranding();
+  const wcApi = useWooCommerce();
+  const [wcDraft, setWcDraft] = useState({ siteUrl: '', consumerKey: '', consumerSecret: '' });
+  const [wcTestState, setWcTestState] = useState({ status: 'idle', message: '' });
+
+  useEffect(() => {
+    setWcDraft({
+      siteUrl: wcApi.connection.siteUrl || '',
+      consumerKey: wcApi.connection.consumerKey || '',
+      consumerSecret: wcApi.connection.consumerSecret || '',
+    });
+  }, [wcApi.connection.siteUrl, wcApi.connection.consumerKey, wcApi.connection.consumerSecret]);
+
+  const saveWooConnection = async () => {
+    await wcApi.saveConnection(wcDraft);
+    success('WooCommerce connection saved');
+  };
+
+  const testWooConnection = async () => {
+    setWcTestState({ status: 'running', message: 'Testing…' });
+    try {
+      const result = await wcApi.testConnection(wcDraft);
+      setWcTestState({ status: 'ok', message: `Connected to ${result.storeName || result.environment} (WC ${result.wcVersion || '?'})` });
+    } catch (err) {
+      setWcTestState({ status: 'error', message: err.message });
+    }
+  };
+
+  const disconnectWoo = async () => {
+    if (!window.confirm('Clear WooCommerce credentials? Cached orders/products/customers will remain until you sync again.')) return;
+    await wcApi.saveConnection({ siteUrl: '', consumerKey: '', consumerSecret: '' });
+    setWcDraft({ siteUrl: '', consumerKey: '', consumerSecret: '' });
+    setWcTestState({ status: 'idle', message: '' });
+    success('WooCommerce disconnected');
+  };
   const [titleDraft, setTitleDraft] = useState(branding.appTitle);
   const [subtitleDraft, setSubtitleDraft] = useState(branding.appSubtitle);
   const [browserTitleDraft, setBrowserTitleDraft] = useState(branding.browserTitle);
@@ -423,6 +458,96 @@ export default function SettingsModal({ isOpen, onClose }) {
                 <RotateCcw className="w-4 h-4" />
                 Reset all branding to defaults
               </button>
+            </div>
+
+            {/* WooCommerce */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <ShoppingCart className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">WooCommerce</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Connect your WC store to pull orders, products, and customers into PIMS. Use a <strong>Read</strong>-only API key.
+              </p>
+
+              <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  Your WooCommerce site must allow CORS from <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>. Without it the browser will block API calls.
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Site URL</label>
+                  <input
+                    type="url"
+                    value={wcDraft.siteUrl}
+                    onChange={e => setWcDraft(d => ({ ...d, siteUrl: e.target.value }))}
+                    placeholder="https://yourstore.com"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Consumer Key</label>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={wcDraft.consumerKey}
+                    onChange={e => setWcDraft(d => ({ ...d, consumerKey: e.target.value }))}
+                    placeholder="ck_..."
+                    className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Consumer Secret</label>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={wcDraft.consumerSecret}
+                    onChange={e => setWcDraft(d => ({ ...d, consumerSecret: e.target.value }))}
+                    placeholder="cs_..."
+                    className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={saveWooConnection}
+                    className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={testWooConnection}
+                    disabled={!wcDraft.siteUrl || !wcDraft.consumerKey || !wcDraft.consumerSecret || wcTestState.status === 'running'}
+                    className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-md font-medium"
+                  >
+                    {wcTestState.status === 'running' ? 'Testing…' : 'Test connection'}
+                  </button>
+                  {wcApi.isConfigured && (
+                    <button
+                      onClick={disconnectWoo}
+                      className="px-3 py-1.5 text-sm border border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md font-medium"
+                    >
+                      Disconnect
+                    </button>
+                  )}
+                </div>
+
+                {wcTestState.status === 'ok' && (
+                  <div className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-xs text-green-800 dark:text-green-200">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>{wcTestState.message}</div>
+                  </div>
+                )}
+                {wcTestState.status === 'error' && (
+                  <div className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-800 dark:text-red-200">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>{wcTestState.message}</div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Vendor Management */}

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.166', date: '2026-05-07', title: 'WooCommerce integration: Settings connection (URL + read keys), test, sync orders/products/customers; new WooCommerce tab with tables and Stock view' },
   { version: '0.0.165', date: '2026-05-07', title: 'Settings → Branding: editable app title/subtitle, browser tab title, custom logo + favicon (persisted in IndexedDB)' },
   { version: '0.0.164', date: '2026-05-07', title: 'Header: title is "PIMS", subtitle is "Peptide Inventory Management System"' },
   { version: '0.0.163', date: '2026-05-07', title: 'Match Vite base to canonical repo casing for GitHub Pages, set browser tab title to PIMS' },

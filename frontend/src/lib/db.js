@@ -67,6 +67,24 @@ const boxStore = localforage.createInstance({
   description: 'Box inventory tracking - orders, on hand, suppliers, costs'
 });
 
+const wcOrderStore = localforage.createInstance({
+  name: 'PeptideInventory',
+  storeName: 'wcOrders',
+  description: 'WooCommerce orders cache'
+});
+
+const wcProductStore = localforage.createInstance({
+  name: 'PeptideInventory',
+  storeName: 'wcProducts',
+  description: 'WooCommerce products cache'
+});
+
+const wcCustomerStore = localforage.createInstance({
+  name: 'PeptideInventory',
+  storeName: 'wcCustomers',
+  description: 'WooCommerce customers cache'
+});
+
 /**
  * Database service for Peptide Inventory System
  * Uses IndexedDB via localforage for client-side data persistence
@@ -771,6 +789,37 @@ export const db = {
     }
   },
 
+  // WooCommerce cache (orders, products, customers)
+  woocommerce: {
+    async _allFromStore(store) {
+      const items = [];
+      await store.iterate((value) => { items.push(value); });
+      return items;
+    },
+    async _replaceStore(store, items, idKey = 'id') {
+      await store.clear();
+      for (const item of items) {
+        const id = String(item[idKey] ?? `${Date.now()}-${Math.random()}`);
+        await store.setItem(id, item);
+      }
+    },
+    orders: {
+      getAll: () => db.woocommerce._allFromStore(wcOrderStore),
+      replaceAll: (items) => db.woocommerce._replaceStore(wcOrderStore, items),
+      clear: () => wcOrderStore.clear(),
+    },
+    products: {
+      getAll: () => db.woocommerce._allFromStore(wcProductStore),
+      replaceAll: (items) => db.woocommerce._replaceStore(wcProductStore, items),
+      clear: () => wcProductStore.clear(),
+    },
+    customers: {
+      getAll: () => db.woocommerce._allFromStore(wcCustomerStore),
+      replaceAll: (items) => db.woocommerce._replaceStore(wcCustomerStore, items),
+      clear: () => wcCustomerStore.clear(),
+    },
+  },
+
   // Utility operations
   async clearAll() {
     await peptideStore.clear();
@@ -784,6 +833,9 @@ export const db = {
     await minutesStore.clear();
     await batchStore.clear();
     await boxStore.clear();
+    await wcOrderStore.clear();
+    await wcProductStore.clear();
+    await wcCustomerStore.clear();
   },
 
   async exportData() {
