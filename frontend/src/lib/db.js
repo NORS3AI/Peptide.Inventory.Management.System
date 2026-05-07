@@ -2,73 +2,73 @@ import localforage from 'localforage';
 
 // Initialize IndexedDB stores
 const peptideStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'peptides',
   description: 'Peptide inventory data'
 });
 
 const orderStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'orders',
   description: 'Peptide orders and lifecycle tracking'
 });
 
 const labelStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'labels',
   description: 'Label inventory and tracking'
 });
 
 const settingsStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'settings',
   description: 'Application settings and configuration'
 });
 
 const transactionStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'transactions',
   description: 'Sales and usage transactions for velocity tracking'
 });
 
 const velocityHistoryStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'velocityHistory',
   description: 'Historical velocity data for trend tracking'
 });
 
 const snapshotStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'snapshots',
   description: 'Daily inventory snapshots for comparison'
 });
 
 const taskStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'tasks',
   description: 'Daily and weekly task management with expiration dates'
 });
 
 const minutesStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'minutes',
   description: 'Team meeting minutes and action items'
 });
 
 const batchStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'batches',
   description: 'Batch purchase tracking with cost and profit analysis'
 });
 
 const boxStore = localforage.createInstance({
-  name: 'SRGInventory',
+  name: 'PeptideInventory',
   storeName: 'boxes',
   description: 'Box inventory tracking - orders, on hand, suppliers, costs'
 });
 
 /**
- * Database service for SRG Inventory System
+ * Database service for Peptide Inventory System
  * Uses IndexedDB via localforage for client-side data persistence
  */
 export const db = {

@@ -84,12 +84,12 @@ export default function Reports({ peptides, orders = [], thresholds }) {
     batchItems.forEach(item => {
       const pricePerBox = Number(item.pricePerBox) || 0;
       const qtyPurchased = Number(item.qtyPurchased) || 0;
-      const srgSale = Number(item.srgSale) || 0;
+      const salePrice = Number(item.salePrice) || 0;
       const pricePerVial = pricePerBox / 10;
       const cost = pricePerBox * (qtyPurchased / 10);
-      const revenue = srgSale * qtyPurchased;
-      const profitBatch = (srgSale - pricePerVial) * qtyPurchased;
-      const profitPct = pricePerVial > 0 ? ((srgSale - pricePerVial) / pricePerVial) * 100 : 0;
+      const revenue = salePrice * qtyPurchased;
+      const profitBatch = (salePrice - pricePerVial) * qtyPurchased;
+      const profitPct = pricePerVial > 0 ? ((salePrice - pricePerVial) / pricePerVial) * 100 : 0;
 
       totalCost += cost;
       totalGross += profitBatch;
@@ -109,7 +109,7 @@ export default function Reports({ peptides, orders = [], thresholds }) {
         vendor,
         qtyPurchased,
         pricePerVial,
-        srgSale,
+        salePrice,
         cost,
         revenue,
         profitPerBatch: profitBatch,
@@ -271,11 +271,11 @@ export default function Reports({ peptides, orders = [], thresholds }) {
     batchItems.forEach(item => {
       const pricePerBox = Number(item.pricePerBox) || 0;
       const qtyPurchased = Number(item.qtyPurchased) || 0;
-      const srgSale = Number(item.srgSale) || 0;
+      const salePrice = Number(item.salePrice) || 0;
       const pricePerVial = pricePerBox / 10;
       const cost = pricePerBox * (qtyPurchased / 10);
-      const revenue = srgSale * qtyPurchased;
-      const profit = (srgSale - pricePerVial) * qtyPurchased;
+      const revenue = salePrice * qtyPurchased;
+      const profit = (salePrice - pricePerVial) * qtyPurchased;
 
       batchCost += cost;
       batchRevenue += revenue;
@@ -292,7 +292,7 @@ export default function Reports({ peptides, orders = [], thresholds }) {
         name: item.name || item.productId || '?',
         cost, revenue, profit,
         margin: cost > 0 ? (profit / cost) * 100 : 0,
-        srgSale,
+        salePrice,
       });
     });
 
@@ -535,11 +535,11 @@ export default function Reports({ peptides, orders = [], thresholds }) {
 
   const handleExportInventory = () => {
     const csvContent = exportToCSV(peptides);
-    downloadCSV(csvContent, `srg-inventory-report-${new Date().toISOString().split('T')[0]}.csv`);
+    downloadCSV(csvContent, `peptide-inventory-report-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleExportSummary = () => {
-    const summary = `SRG Inventory Summary Report
+    const summary = `Peptide Inventory Summary Report
 Generated: ${new Date().toLocaleString()}
 
 === INVENTORY OVERVIEW ===
@@ -570,7 +570,7 @@ ${stats.needsAttention.map(p =>
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `srg-summary-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `inventory-summary-${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1572,7 +1572,7 @@ ${stats.needsAttention.map(p =>
                       { id: 'vendor', label: 'Vendor' },
                       { id: 'qtyPurchased', label: 'QTY' },
                       { id: 'pricePerVial', label: '$/Vial' },
-                      { id: 'srgSale', label: 'SRG Sale' },
+                      { id: 'salePrice', label: 'Sale Price' },
                       { id: 'cost', label: 'Cost' },
                       { id: 'revenue', label: 'Revenue' },
                       { id: 'profitPerBatch', label: 'Profit' },
@@ -1600,7 +1600,7 @@ ${stats.needsAttention.map(p =>
                       <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{p.vendor}</td>
                       <td className="px-3 py-2 text-right">{p.qtyPurchased}</td>
                       <td className="px-3 py-2 text-right">${p.pricePerVial.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right">${p.srgSale.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">${p.salePrice.toFixed(2)}</td>
                       <td className="px-3 py-2 text-right">${p.cost.toFixed(2)}</td>
                       <td className="px-3 py-2 text-right">${p.revenue.toFixed(2)}</td>
                       <td className={`px-3 py-2 text-right font-medium ${p.profitPerBatch >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -1646,7 +1646,7 @@ ${stats.needsAttention.map(p =>
         {financialData.profitPerSecond > 0 && (
           <div className="mb-6 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-6 text-white">
             <div className="text-center">
-              <p className="text-sm font-medium opacity-80 mb-1">SRG Estimated Earnings (Live)</p>
+              <p className="text-sm font-medium opacity-80 mb-1">Estimated Earnings (Live)</p>
               <p className="text-5xl font-bold font-mono tracking-wider">
                 ${liveEarnings.toFixed(4)}
               </p>
@@ -1807,7 +1807,7 @@ ${stats.needsAttention.map(p =>
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-8">#</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SRG Sale</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sale Price</th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Cost</th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Profit</th>
@@ -1819,7 +1819,7 @@ ${stats.needsAttention.map(p =>
                     <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-3 py-2 text-xs text-gray-400">{i + 1}</td>
                       <td className="px-3 py-2 font-medium text-gray-900 dark:text-white whitespace-nowrap">{p.name}</td>
-                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">${p.srgSale.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">${p.salePrice.toFixed(2)}</td>
                       <td className="px-3 py-2 text-right text-red-600 dark:text-red-400">${p.cost.toFixed(2)}</td>
                       <td className="px-3 py-2 text-right text-blue-600 dark:text-blue-400">${p.revenue.toFixed(2)}</td>
                       <td className={`px-3 py-2 text-right font-semibold ${p.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>${p.profit.toFixed(2)}</td>

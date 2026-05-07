@@ -1,4 +1,4 @@
-# Security Guide - SRG Inventory System
+# Security Guide - Peptide Inventory System
 
 ## 🔐 Authentication Overview
 
@@ -71,7 +71,7 @@ Version 0.0.100-alpha introduces **password protection** for your inventory syst
 
 ### Examples of Strong Passwords
 - `Peptide!2024#Secure`
-- `0ath-Inv3nt0ry!$afe`
+- `Inv3nt0ry-Sys!$afe`
 - `MyL@b$3cur3Pa$$`
 
 ### Server Security
@@ -95,7 +95,7 @@ Version 0.0.100-alpha introduces **password protection** for your inventory syst
 ## Token Management
 
 ### Token Storage
-- Stored in `localStorage` as `srg_auth_token`
+- Stored in `localStorage` as `inventory_auth_token`
 - Persists across browser sessions
 - Cleared on logout
 

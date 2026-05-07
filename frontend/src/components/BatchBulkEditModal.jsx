@@ -14,7 +14,7 @@ const ALL_COLUMNS = [
   { id: 'comp1', label: 'COMP1', type: 'number', width: 'w-24' },
   { id: 'comp2', label: 'COMP2', type: 'number', width: 'w-24' },
   { id: 'comp3', label: 'COMP3', type: 'number', width: 'w-24' },
-  { id: 'srgSale', label: 'SRG Sale', type: 'number', width: 'w-24' },
+  { id: 'salePrice', label: 'Sale Price', type: 'number', width: 'w-24' },
   { id: 'pricePerVial_override', label: '$/Vial Override', type: 'number', width: 'w-24' },
   { id: 'totalQty_override', label: 'Total/Qty Override', type: 'number', width: 'w-24' },
   { id: 'profitPerVial_override', label: 'Profit/Vial $ Override', type: 'number', width: 'w-24' },

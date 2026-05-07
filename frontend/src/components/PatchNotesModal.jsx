@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.160', date: '2026-05-07', title: 'Remove legacy company branding from app, docs, IndexedDB namespace, auth token, sample IDs, and deploy paths' },
   { version: '0.0.159', date: '2026-03-29', title: 'Remove Sales Velocity Tracking from Reports, keep Inventory Velocity Analysis' },
   { version: '0.0.158', date: '2026-03-29', title: 'Batch Purchases export to CSV, re-import support for exported files, fix Import sub-tab header wrapping instead of scrolling' },
   { version: '0.0.157', date: '2026-03-29', title: 'Boxes view with full tracking (on hand, on order, daily usage, suppliers, costs), Dashboard Boxes overview, Box Invoice import, Financial Analytics in Reports with live $/sec earnings counter, vendor P&L charts, margin distribution, product profit table; Batch/Box import defaults to Update mode' },
@@ -63,7 +64,7 @@ const PATCH_NOTES = [
   { version: '0.0.101', date: '2026-02-10', title: 'Add bulk edit modal for mass editing all peptides at once' },
   { version: '0.0.100', date: '2026-02-10', title: 'Update docs/ build to match IndexedDB-only frontend' },
   { version: '0.0.99', date: '2026-02-10', title: 'Revert frontend to IndexedDB storage, remove backend API/auth dependency' },
-  { version: '0.0.98', date: '2026-02-09', title: 'Claude/srg peptide inventory system merge (#36)' },
+  { version: '0.0.98', date: '2026-02-09', title: 'Claude/peptide inventory system merge (#36)' },
   { version: '0.0.97', date: '2026-02-09', title: 'Add comprehensive security documentation' },
   { version: '0.0.96', date: '2026-02-09', title: 'Add password authentication system (v0.0.100-alpha)' },
   { version: '0.0.95', date: '2026-02-09', title: 'Add deployment documentation and development startup script' },
@@ -334,7 +335,7 @@ export default function PatchNotesModal({ isOpen, onClose, currentVersion }) {
           <div className="text-center py-6 border-t border-gray-200 dark:border-gray-700">
             <div className="inline-flex items-center gap-2 text-sm text-gray-400 dark:text-gray-600">
               <Rocket className="w-4 h-4" />
-              <span>SRG Inventory System - Born Feb 6, 2026</span>
+              <span>Peptide Inventory System - Born Feb 6, 2026</span>
             </div>
           </div>
         </div>

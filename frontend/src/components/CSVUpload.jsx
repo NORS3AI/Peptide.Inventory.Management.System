@@ -83,14 +83,14 @@ export default function CSVUpload({ onImportComplete }) {
     try {
       // Load exclusions from settings
       const excludedProducts = await db.settings.get('exclusions').catch(() => null) || [
-        'SRG-A1-TEST',
+        'PEP-A1-TEST',
         'a1 test',
-        'SRG-GH-FRAGMENT-176-191-5MG',
-        'SRG-GIFT-CARD',
+        'PEP-GH-FRAGMENT-176-191-5MG',
+        'PEP-GIFT-CARD',
         'gift card',
-        'SRG-NAD+-1000MG',
-        'SRG-SS-31-10MG',
-        'SRG-TESA-IPA-10-5'
+        'PEP-NAD+-1000MG',
+        'PEP-SS-31-10MG',
+        'PEP-TESA-IPA-10-5'
       ];
 
       // Parse CSV with exclusions
@@ -187,7 +187,7 @@ export default function CSVUpload({ onImportComplete }) {
 
   const handleDownloadSample = () => {
     const sampleCSV = generateSampleCSV();
-    downloadCSV(sampleCSV, 'srg-inventory-sample.csv');
+    downloadCSV(sampleCSV, 'peptide-inventory-sample.csv');
   };
 
   const clearResult = () => {

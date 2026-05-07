@@ -1,4 +1,4 @@
-# SRG Peptide Inventory System - Deployment Guide
+# Peptide Inventory System - Deployment Guide
 
 ## Critical Change: Backend Database Required
 
@@ -215,7 +215,7 @@ npm install -g pm2
 
 # Start backend
 cd backend
-pm2 start src/server.js --name srg-inventory-api
+pm2 start src/server.js --name peptide-inventory-api
 
 # Save PM2 configuration
 pm2 save
@@ -232,7 +232,7 @@ server {
 
     # Frontend
     location / {
-        root /path/to/SRG-Inventory/frontend/dist;
+        root /path/to/peptide.inventory.management.system/frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 
