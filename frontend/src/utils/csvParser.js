@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
 /**
- * CSV parsing utilities for SRG Inventory System
+ * CSV parsing utilities for Peptide Inventory System
  * Handles parsing, validation, and transformation of inventory CSV files
  */
 

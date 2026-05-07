@@ -1,7 +1,7 @@
 # CSV Import Specification
 
 ## Overview
-This document defines the CSV format expected by the SRG Peptide Inventory System.
+This document defines the CSV format expected by the Peptide Inventory System.
 
 ## File Requirements
 

@@ -92,7 +92,7 @@ export default function SettingsModal({ isOpen, onClose }) {
 
       // Create filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `srg-inventory-backup-${timestamp}.json`;
+      const filename = `inventory-backup-${timestamp}.json`;
 
       // Download as JSON file
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });

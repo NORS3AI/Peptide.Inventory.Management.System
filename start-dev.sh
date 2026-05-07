@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SRG Peptide Inventory System - Development Startup Script
+# Peptide Inventory System - Development Startup Script
 # This script starts both the backend API server and frontend development server
 
 set -e
 
-echo "🚀 Starting SRG Peptide Inventory System..."
+echo "🚀 Starting Peptide Inventory System..."
 echo ""
 
 # Check if backend dependencies are installed

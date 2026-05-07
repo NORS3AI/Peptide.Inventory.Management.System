@@ -2,7 +2,7 @@
 
 ## Overview
 
-The SRG Peptide Inventory System includes a comprehensive test suite built with Vitest and React Testing Library. All 111 tests are passing, providing confidence in the core business logic, data layer, and UI components.
+The Peptide Inventory System includes a comprehensive test suite built with Vitest and React Testing Library. All 111 tests are passing, providing confidence in the core business logic, data layer, and UI components.
 
 ## Test Infrastructure
 
