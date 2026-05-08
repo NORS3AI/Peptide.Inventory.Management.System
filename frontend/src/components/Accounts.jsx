@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound } from 'lucide-react';
+import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound, Lock, Unlock } from 'lucide-react';
 import { db } from '../lib/db';
 import { TABS, emptyPermissions } from '../lib/permissions';
 import { useToast } from './Toast';
@@ -11,15 +11,24 @@ const ACCOUNT_TABS = [
   { id: 'roles', label: 'Roles' },
 ];
 
+const CREATION_ENABLED_KEY = 'accountCreationEnabled';
+
+export async function isAccountCreationEnabled() {
+  const v = await db.settings.get(CREATION_ENABLED_KEY);
+  return v === null || v === undefined ? true : Boolean(v);
+}
+
 export default function Accounts() {
-  const { currentUser, canManageUsers, canManageRoles, refresh } = useAuth();
+  const { currentUser, canManageUsers, canManageRoles, refresh, isSuperAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [creationEnabled, setCreationEnabled] = useState(true);
 
   const reload = async () => {
     setUsers(await db.users.getAll());
     setRoles(await db.roles.getAll());
+    setCreationEnabled(await isAccountCreationEnabled());
   };
 
   useEffect(() => { reload(); }, []);
@@ -64,7 +73,19 @@ export default function Accounts() {
       </div>
 
       {activeTab === 'users' && canManageUsers && (
-        <UsersPanel users={users} rolesById={rolesById} roles={roles} reload={async () => { await reload(); await refresh(); }} currentUser={currentUser} />
+        <UsersPanel
+          users={users}
+          rolesById={rolesById}
+          roles={roles}
+          reload={async () => { await reload(); await refresh(); }}
+          currentUser={currentUser}
+          creationEnabled={creationEnabled}
+          isSuperAdmin={isSuperAdmin}
+          onToggleCreation={async (next) => {
+            await db.settings.set(CREATION_ENABLED_KEY, next);
+            setCreationEnabled(next);
+          }}
+        />
       )}
       {activeTab === 'roles' && canManageRoles && (
         <RolesPanel roles={roles} reload={async () => { await reload(); await refresh(); }} />
@@ -85,7 +106,7 @@ function RoleBadge({ role }) {
   );
 }
 
-function UsersPanel({ users, rolesById, roles, reload, currentUser }) {
+function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnabled, isSuperAdmin, onToggleCreation }) {
   const { success, error: showError } = useToast();
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -112,6 +133,7 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser }) {
   const submit = async () => {
     try {
       if (creating) {
+        if (!(await isAccountCreationEnabled())) throw new Error('Account creation is locked');
         if (!draft.password || draft.password.length < 6) throw new Error('Password must be at least 6 characters');
         await createUser(draft);
         success('Account created');
@@ -150,10 +172,58 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser }) {
 
   return (
     <div className="space-y-3">
+      {/* Account creation lock */}
+      <div className={`flex items-center justify-between p-3 rounded-lg border ${
+        creationEnabled
+          ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+          : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+      }`}>
+        <div className="flex items-center gap-2 text-sm">
+          {creationEnabled ? (
+            <Unlock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          ) : (
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          )}
+          <div>
+            <div className="font-medium text-gray-900 dark:text-white">
+              {creationEnabled ? 'Account creation is enabled' : 'Account creation is locked'}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {creationEnabled
+                ? 'Anyone with the right role can create new accounts.'
+                : "New accounts can't be created until a Super Admin re-enables this."}
+            </div>
+          </div>
+        </div>
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={creationEnabled}
+            onChange={e => onToggleCreation(e.target.checked)}
+            disabled={!isSuperAdmin}
+            className="sr-only peer"
+          />
+          <div
+            className={`relative w-11 h-6 rounded-full transition-colors ${
+              isSuperAdmin ? '' : 'opacity-50 cursor-not-allowed'
+            } ${creationEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+            title={isSuperAdmin ? '' : 'Only Super Admin can change this'}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                creationEnabled ? 'translate-x-5' : ''
+              }`}
+            />
+          </div>
+        </label>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={startCreate}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
+          disabled={!creationEnabled}
+          title={creationEnabled ? '' : 'Account creation is locked'}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
           New User

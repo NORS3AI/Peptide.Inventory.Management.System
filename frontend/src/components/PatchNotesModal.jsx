@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.168', date: '2026-05-07', title: 'Accounts → Users: lock toggle that disables account creation (Super Admin only) — applies to UI button and submit path' },
   { version: '0.0.167', date: '2026-05-07', title: 'Auth gate (UX-level): users + roles in IndexedDB, first-run super-admin wizard, login screen, Accounts tab, color-coded role badges, permission-gated nav' },
   { version: '0.0.166', date: '2026-05-07', title: 'WooCommerce integration: Settings connection (URL + read keys), test, sync orders/products/customers; new WooCommerce tab with tables and Stock view' },
   { version: '0.0.165', date: '2026-05-07', title: 'Settings → Branding: editable app title/subtitle, browser tab title, custom logo + favicon (persisted in IndexedDB)' },
