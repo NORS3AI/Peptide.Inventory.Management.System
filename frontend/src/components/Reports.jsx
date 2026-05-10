@@ -1,12 +1,65 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Download, TrendingUp, Clock, Package, CheckCircle, AlertTriangle, FileText, PieChart as PieChartIcon, BarChart3, LineChart as LineChartIcon, AreaChart as AreaChartIcon, ArrowUpDown, Tag, Layers, DollarSign, Activity, Timer } from 'lucide-react';
+import { Download, TrendingUp, Clock, Package, CheckCircle, AlertTriangle, FileText, PieChart as PieChartIcon, BarChart3, LineChart as LineChartIcon, AreaChart as AreaChartIcon, ArrowUpDown, Tag, Layers, DollarSign, Activity, Timer, ChevronRight, ShoppingBag, Users as UsersIcon } from 'lucide-react';
 import { PieChart, Pie, BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { calculateStockStatus } from '../utils/stockStatus';
 import { checkSalesReadiness } from '../utils/salesReadiness';
 import { exportToCSV, downloadCSV } from '../utils/csvParser';
 import { db } from '../lib/db';
+import ReportsProducts from './reports/ReportsProducts';
+import ReportsSalesCustomers from './reports/ReportsSalesCustomers';
+
+function parseReportHash() {
+  const h = (window.location.hash || '').replace(/^#/, '');
+  if (h.startsWith('reports/')) return h.slice('reports/'.length);
+  return '';
+}
+
+function useReportSubRoute() {
+  const [sub, setSub] = useState(parseReportHash());
+  useEffect(() => {
+    const onChange = () => setSub(parseReportHash());
+    window.addEventListener('hashchange', onChange);
+    return () => window.removeEventListener('hashchange', onChange);
+  }, []);
+  const navigate = (key) => {
+    window.location.hash = key ? `reports/${key}` : 'reports';
+  };
+  return [sub, navigate];
+}
 
 export default function Reports({ peptides, orders = [], thresholds }) {
+  const [sub, navigateSub] = useReportSubRoute();
+
+  if (sub === 'products') {
+    return <ReportsProducts onBack={() => navigateSub('')} />;
+  }
+  if (sub === 'sales-customers') {
+    return <ReportsSalesCustomers onBack={() => navigateSub('')} onGoToProducts={() => navigateSub('products')} />;
+  }
+  return <ReportsOverview peptides={peptides} orders={orders} thresholds={thresholds} navigateSub={navigateSub} />;
+}
+
+function ReportCard({ title, description, icon, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex items-center justify-between gap-3 w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-left"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-300">
+          {icon}
+        </div>
+        <div>
+          <div className="font-semibold text-gray-900 dark:text-white">{title}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</div>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+    </button>
+  );
+}
+
+function ReportsOverview({ peptides, orders = [], thresholds, navigateSub }) {
   const [chartType, setChartType] = useState('pie'); // pie, bar, line, area
   const [lowStockSort, setLowStockSort] = useState({ field: 'peptideId', direction: 'asc' });
   const [missingReqSort, setMissingReqSort] = useState({ field: 'peptideId', direction: 'asc' });
@@ -577,6 +630,22 @@ ${stats.needsAttention.map(p =>
 
   return (
     <div className="space-y-6">
+      {/* Sub-reports nav */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ReportCard
+          title="Products"
+          description="Items sold, top products, full quantity & revenue breakdowns"
+          icon={<ShoppingBag className="w-5 h-5" />}
+          onClick={() => navigateSub('products')}
+        />
+        <ReportCard
+          title="Sales & Customers"
+          description="Revenue, AOV, new vs returning, US shipments map, top customers"
+          icon={<UsersIcon className="w-5 h-5" />}
+          onClick={() => navigateSub('sales-customers')}
+        />
+      </div>
+
       {/* Export Actions */}
       <div className="flex flex-wrap gap-3">
         <button
