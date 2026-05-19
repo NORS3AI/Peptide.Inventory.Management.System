@@ -90,3 +90,44 @@ export async function wpGetMe(siteUrl, token) {
     roles: data.roles || [],
   };
 }
+
+/**
+ * List all WordPress users (requires the token holder to have the
+ * list_users capability — administrators do). Paginated.
+ * Returns [{ id, name, slug, email, roles: [] }].
+ */
+export async function wpListUsers(siteUrl, token) {
+  const base = normalizeSite(siteUrl);
+  const perPage = 100;
+  let page = 1;
+  let totalPages = 1;
+  const all = [];
+  do {
+    const res = await fetch(
+      `${base}/wp-json/wp/v2/users?context=edit&per_page=${perPage}&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let msg = `WordPress ${res.status} ${res.statusText}`;
+      try {
+        const p = JSON.parse(text);
+        if (p?.message) msg = p.message.replace(/<[^>]*>/g, '');
+      } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    totalPages = Number(res.headers.get('X-WP-TotalPages')) || 1;
+    const data = await res.json();
+    for (const u of data) {
+      all.push({
+        id: u.id,
+        name: u.name,
+        slug: u.slug,
+        email: u.email || '',
+        roles: u.roles || [],
+      });
+    }
+    page += 1;
+  } while (page <= totalPages);
+  return all;
+}
