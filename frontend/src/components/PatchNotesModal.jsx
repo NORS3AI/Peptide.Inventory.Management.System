@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.171', date: '2026-05-10', title: 'WooCommerce: configurable auto-sync interval (15/30/60 min, runs while a tab is open) and a Clear synced data button to wipe test orders/products/customers before go-live' },
   { version: '0.0.170', date: '2026-05-10', title: 'WordPress JWT auth mode (Settings → Authentication): real server-verified login against your WP site, first WP user becomes Super Admin, configurable default role; relative build base so PIMS runs from any domain/path' },
   { version: '0.0.169', date: '2026-05-10', title: 'Reports: hash-routed sub-pages — Products (KPIs, items-sold graph, top/all-by-qty/revenue tables) and Sales & Customers (6 KPI bar with YoY, daily revenue chart, US states map with hover, Sales by Location, Most Valuable Customers, Top 5 by revenue with link to Products)' },
   { version: '0.0.168', date: '2026-05-07', title: 'Accounts → Users: lock toggle that disables account creation (Super Admin only) — applies to UI button and submit path' },
