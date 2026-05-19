@@ -98,6 +98,7 @@ export function transformPeptideData(rawData, options = {}) {
         purity: extractField(row, fieldMapping.purity),
         size: extractField(row, fieldMapping.size),
         netWeight: extractField(row, fieldMapping.netWeight),
+        reserve: parseNumber(extractField(row, fieldMapping.reserve)),
 
         // Nickname / display name
         nickname: extractField(row, fieldMapping.nickname),
@@ -215,6 +216,11 @@ export function getDefaultFieldMapping() {
     size: ['Size', 'Dose', 'Dosage', 'Strength'],
     netWeight: ['Net Weight', 'Net Wt', 'Tested Weight'],
 
+    // Off-book reserve: stock manually set aside (e.g. for replacing
+    // a customer's broken vial) so it never touches live inventory.
+    // Distinct from the auto-calculated "Off Books" overage column.
+    reserve: ['OFF BOOKS', 'Off Books', 'Off-Book Reserve', 'Off Book Reserve', 'Reserve', 'Set Aside'],
+
     // Labeling tracking
     labeledCount: ['Labeled', 'Labeled Count', 'Labeled Qty', 'Labels Applied'],
 
@@ -318,6 +324,7 @@ export function exportToCSV(peptides) {
     purity: 'Purity',
     size: 'Size',
     netWeight: 'Net Weight',
+    reserve: 'OFF BOOKS',
     labeledCount: 'Labeled',
     orderedDate: 'Incoming Arrival',
     orderedQty: 'Incoming Qty',

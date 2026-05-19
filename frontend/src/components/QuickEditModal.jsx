@@ -18,6 +18,7 @@ export default function QuickEditModal({ peptide, onClose, onUpdate, position })
     { id: 'batchNumber', label: 'Batch #', type: 'text' },
     { id: 'size', label: 'Size', type: 'text' },
     { id: 'netWeight', label: 'Net Weight', type: 'text' },
+    { id: 'reserve', label: 'Off-Book Reserve', type: 'number' },
     { id: 'purity', label: 'Purity', type: 'text' },
     { id: 'velocity', label: 'Velocity', type: 'text' },
     { id: 'orderedQty', label: 'Ordered Qty', type: 'number' },
