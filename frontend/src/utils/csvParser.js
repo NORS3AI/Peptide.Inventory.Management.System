@@ -96,6 +96,7 @@ export function transformPeptideData(rawData, options = {}) {
         // Lifecycle & Testing fields
         batchNumber: extractField(row, fieldMapping.batchNumber),
         purity: extractField(row, fieldMapping.purity),
+        size: extractField(row, fieldMapping.size),
         netWeight: extractField(row, fieldMapping.netWeight),
 
         // Nickname / display name
@@ -208,7 +209,11 @@ export function getDefaultFieldMapping() {
     // Lifecycle & Testing
     batchNumber: ['Batch Number', 'Batch', 'Batch #', 'Lot Number', 'Lot'],
     purity: ['Purity', 'Purity %', 'Purity Percentage'],
-    netWeight: ['Size', 'Net Weight', 'Weight', 'Net Wt'],
+    // Size = the lab's labeled dose (e.g. 5, 10, 15). Distinct from
+    // Net Weight = the actual measured weight after testing. They are
+    // two different things and must not be conflated.
+    size: ['Size', 'Dose', 'Dosage', 'Strength'],
+    netWeight: ['Net Weight', 'Net Wt', 'Tested Weight'],
 
     // Labeling tracking
     labeledCount: ['Labeled', 'Labeled Count', 'Labeled Qty', 'Labels Applied'],
@@ -311,7 +316,8 @@ export function exportToCSV(peptides) {
     unit: 'Unit',
     batchNumber: 'Batch Number',
     purity: 'Purity',
-    netWeight: 'Size',
+    size: 'Size',
+    netWeight: 'Net Weight',
     labeledCount: 'Labeled',
     orderedDate: 'Incoming Arrival',
     orderedQty: 'Incoming Qty',

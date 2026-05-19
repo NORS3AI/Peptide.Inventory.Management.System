@@ -21,6 +21,7 @@ const DEFAULT_COLUMNS = [
   { id: 'offBooks', label: 'Off Books', field: 'offBooks', sortable: true },
   { id: 'status', label: 'Status', field: 'status', sortable: true },
   { id: 'batchNumber', label: 'Batch #', field: 'batchNumber', sortable: true },
+  { id: 'size', label: 'Size', field: 'size', sortable: true },
   { id: 'netWeight', label: 'Net Weight', field: 'netWeight', sortable: true },
   { id: 'purity', label: 'Purity', field: 'purity', sortable: true },
   { id: 'velocity', label: 'Velocity', field: 'velocity', sortable: true },
