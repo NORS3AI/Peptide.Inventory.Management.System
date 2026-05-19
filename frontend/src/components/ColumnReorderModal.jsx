@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 export default function ColumnReorderModal({ columns, hiddenColumns = [], onReorder, onVisibilityChange, onClose }) {
@@ -42,7 +43,9 @@ export default function ColumnReorderModal({ columns, hiddenColumns = [], onReor
     onClose();
   };
 
-  // Close on outside click
+  // Close on outside click. Delay binding so the click that opened
+  // the modal doesn't immediately close it, and so checkbox/reorder
+  // clicks inside the modal aren't swallowed on mount.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -50,19 +53,25 @@ export default function ColumnReorderModal({ columns, hiddenColumns = [], onReor
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 100);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [onClose]);
 
-  return (
+  // Portal to body so ancestor overflow/transform/stacking contexts
+  // (table scroll container, error boundary, etc.) can't trap the
+  // modal or block pointer events on its controls.
+  return createPortal(
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-30 z-[999]" />
+      <div className="fixed inset-0 bg-black bg-opacity-30 z-[999]" onClick={onClose} />
 
       {/* Modal */}
       <div
@@ -177,6 +186,7 @@ export default function ColumnReorderModal({ columns, hiddenColumns = [], onReor
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
