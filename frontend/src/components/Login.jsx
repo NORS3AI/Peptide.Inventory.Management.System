@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useBranding } from '../hooks/useBranding';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, authMode } = useAuth();
   const { branding } = useBranding();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +86,9 @@ export default function Login() {
         </form>
 
         <p className="mt-4 text-xs text-gray-400 dark:text-gray-500 text-center">
-          Forgot your password? Ask a Super Admin to reset it from Accounts.
+          {authMode === 'wordpress'
+            ? 'Sign in with your superstitionresearch.com (WordPress) account.'
+            : 'Forgot your password? Ask a Super Admin to reset it from Accounts.'}
         </p>
       </div>
     </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2 } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
 import { useWooCommerce } from '../hooks/useWooCommerce';
+import { getAuthMode, setAuthMode, getWpAuthConfig, setWpAuthConfig } from '../hooks/useAuth';
+import { wpGetToken } from '../lib/wpAuth';
 
 const MAX_IMAGE_BYTES = 1024 * 1024; // 1 MB cap on logo/icon uploads
 
@@ -35,6 +37,39 @@ export default function SettingsModal({ isOpen, onClose }) {
   const wcApi = useWooCommerce();
   const [wcDraft, setWcDraft] = useState({ siteUrl: '', consumerKey: '', consumerSecret: '' });
   const [wcTestState, setWcTestState] = useState({ status: 'idle', message: '' });
+
+  // Authentication (local vs WordPress JWT)
+  const [authModeDraft, setAuthModeDraft] = useState('local');
+  const [wpAuthDraft, setWpAuthDraft] = useState({ siteUrl: '', defaultRoleId: 'role_guest' });
+  const [roleOptions, setRoleOptions] = useState([]);
+  const [wpTestState, setWpTestState] = useState({ status: 'idle', message: '' });
+  const [wpTestCreds, setWpTestCreds] = useState({ username: '', password: '' });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    (async () => {
+      setAuthModeDraft(await getAuthMode());
+      setWpAuthDraft(await getWpAuthConfig());
+      setRoleOptions(await db.roles.getAll());
+    })();
+  }, [isOpen]);
+
+  const saveAuthSettings = async () => {
+    await setAuthMode(authModeDraft);
+    await setWpAuthConfig(wpAuthDraft);
+    success('Authentication settings saved');
+  };
+
+  const testWpLogin = async () => {
+    setWpTestState({ status: 'running', message: 'Testing…' });
+    try {
+      if (!wpAuthDraft.siteUrl) throw new Error('Enter the WordPress site URL first');
+      const r = await wpGetToken(wpAuthDraft.siteUrl, wpTestCreds.username, wpTestCreds.password);
+      setWpTestState({ status: 'ok', message: `Authenticated as ${r.userDisplayName || r.userNicename}` });
+    } catch (err) {
+      setWpTestState({ status: 'error', message: err.message });
+    }
+  };
 
   useEffect(() => {
     setWcDraft({
@@ -458,6 +493,114 @@ export default function SettingsModal({ isOpen, onClose }) {
                 <RotateCcw className="w-4 h-4" />
                 Reset all branding to defaults
               </button>
+            </div>
+
+            {/* Authentication */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldCheck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Authentication</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Choose how users sign in. WordPress mode verifies credentials against your site — real, server-side auth.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <label className={`flex-1 border rounded-lg p-3 cursor-pointer ${authModeDraft === 'local' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}>
+                    <input type="radio" name="authMode" className="mr-2" checked={authModeDraft === 'local'} onChange={() => setAuthModeDraft('local')} />
+                    <span className="font-medium text-sm text-gray-900 dark:text-white">Local accounts</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PIMS-managed accounts in this browser. UX gate only.</p>
+                  </label>
+                  <label className={`flex-1 border rounded-lg p-3 cursor-pointer ${authModeDraft === 'wordpress' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}>
+                    <input type="radio" name="authMode" className="mr-2" checked={authModeDraft === 'wordpress'} onChange={() => setAuthModeDraft('wordpress')} />
+                    <span className="font-medium text-sm text-gray-900 dark:text-white">WordPress (JWT)</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Verified by your WordPress site. Requires the JWT plugin.</p>
+                  </label>
+                </div>
+
+                {authModeDraft === 'wordpress' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">WordPress Site URL</label>
+                      <input
+                        type="url"
+                        value={wpAuthDraft.siteUrl}
+                        onChange={e => setWpAuthDraft(d => ({ ...d, siteUrl: e.target.value }))}
+                        placeholder="https://superstitionresearch.com"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default role for new WordPress users</label>
+                      <select
+                        value={wpAuthDraft.defaultRoleId}
+                        onChange={e => setWpAuthDraft(d => ({ ...d, defaultRoleId: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        {roleOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        The first WordPress user to sign in becomes Super Admin. Everyone after gets this role until a Super Admin changes it in Accounts.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
+                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Test a WordPress login</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={wpTestCreds.username}
+                          onChange={e => setWpTestCreds(c => ({ ...c, username: e.target.value }))}
+                          placeholder="WP username"
+                          autoComplete="off"
+                          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                        <input
+                          type="password"
+                          value={wpTestCreds.password}
+                          onChange={e => setWpTestCreds(c => ({ ...c, password: e.target.value }))}
+                          placeholder="WP password"
+                          autoComplete="off"
+                          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <button
+                        onClick={testWpLogin}
+                        disabled={wpTestState.status === 'running'}
+                        className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-md font-medium"
+                      >
+                        {wpTestState.status === 'running' ? 'Testing…' : 'Test login'}
+                      </button>
+                      {wpTestState.status === 'ok' && (
+                        <div className="flex items-start gap-2 text-xs text-green-700 dark:text-green-300">
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />{wpTestState.message}
+                        </div>
+                      )}
+                      {wpTestState.status === 'error' && (
+                        <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300">
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />{wpTestState.message}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        Requires the <strong>JWT Authentication for WP REST API</strong> plugin active on your site, plus
+                        <code className="px-1">JWT_AUTH_SECRET_KEY</code> in wp-config.php. If PIMS is not same-origin with WordPress you also need <code className="px-1">JWT_AUTH_CORS_ENABLE</code> and a CORS allow rule for <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>.
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={saveAuthSettings}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                >
+                  Save Authentication Settings
+                </button>
+              </div>
             </div>
 
             {/* WooCommerce */}

@@ -2,9 +2,35 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { db } from '../lib/db';
 import { hashPassword, verifyPassword, generateUserId } from '../lib/auth';
 import { DEFAULT_ROLES, emptyPermissions } from '../lib/permissions';
+import { wpGetToken, wpValidateToken, wpGetMe } from '../lib/wpAuth';
 
 const SESSION_KEY = 'pims_session';
+const WP_TOKEN_KEY = 'pims_wp_token';
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+const AUTH_MODE_KEY = 'authMode';            // 'local' | 'wordpress'
+const WP_AUTH_CONFIG_KEY = 'wpAuthConfig';   // { siteUrl, defaultRoleId }
+
+export async function getAuthMode() {
+  const m = await db.settings.get(AUTH_MODE_KEY);
+  return m === 'wordpress' ? 'wordpress' : 'local';
+}
+
+export async function getWpAuthConfig() {
+  const c = await db.settings.get(WP_AUTH_CONFIG_KEY);
+  return { siteUrl: '', defaultRoleId: 'role_guest', ...(c || {}) };
+}
+
+export async function setAuthMode(mode) {
+  await db.settings.set(AUTH_MODE_KEY, mode === 'wordpress' ? 'wordpress' : 'local');
+}
+
+export async function setWpAuthConfig(patch) {
+  const current = await getWpAuthConfig();
+  const next = { ...current, ...patch };
+  await db.settings.set(WP_AUTH_CONFIG_KEY, next);
+  return next;
+}
 
 function readSession() {
   try {
@@ -30,6 +56,11 @@ function writeSession(userId) {
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(WP_TOKEN_KEY);
+}
+
+export function getWpToken() {
+  return localStorage.getItem(WP_TOKEN_KEY) || null;
 }
 
 async function ensureDefaultRoles() {
@@ -53,7 +84,49 @@ export async function createSuperAdmin({ username, password, email, firstName = 
     phone: phone.trim(),
     roleId: 'role_super_admin',
     passwordHash,
+    source: 'local',
     createdAt: new Date().toISOString(),
+  };
+  await db.users.set(id, user);
+  return user;
+}
+
+/**
+ * Find or create the local mirror record for a WordPress user.
+ * The first WP user ever to log in becomes Super Admin; subsequent
+ * users get the configured default role and can be re-assigned in
+ * Accounts by a Super Admin.
+ */
+async function upsertWpUser({ username, email, displayName, wpRoles }) {
+  await ensureDefaultRoles();
+  const existing = await db.users.findByUsername(username);
+  if (existing) {
+    const patched = {
+      ...existing,
+      email: email || existing.email,
+      wpRoles: wpRoles || existing.wpRoles || [],
+      lastLoginAt: new Date().toISOString(),
+    };
+    await db.users.set(existing.id, patched);
+    return patched;
+  }
+  const totalUsers = await db.users.count();
+  const cfg = await getWpAuthConfig();
+  const roleId = totalUsers === 0 ? 'role_super_admin' : (cfg.defaultRoleId || 'role_guest');
+  const id = generateUserId();
+  const [firstName, ...rest] = (displayName || username).split(' ');
+  const user = {
+    id,
+    username: username.trim(),
+    email: (email || '').trim(),
+    firstName: (firstName || '').trim(),
+    lastName: rest.join(' ').trim(),
+    phone: '',
+    roleId,
+    source: 'wordpress',
+    wpRoles: wpRoles || [],
+    createdAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString(),
   };
   await db.users.set(id, user);
   return user;
@@ -63,14 +136,52 @@ export function useAuth() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
   const [hasUsers, setHasUsers] = useState(false);
+  const [authMode, setAuthModeState] = useState('local');
+  const [wpConfig, setWpConfig] = useState({ siteUrl: '', defaultRoleId: 'role_guest' });
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       await ensureDefaultRoles();
+      const mode = await getAuthMode();
+      const cfg = await getWpAuthConfig();
+      setAuthModeState(mode);
+      setWpConfig(cfg);
+
       const userCount = await db.users.count();
       setHasUsers(userCount > 0);
+
+      if (mode === 'wordpress') {
+        const token = getWpToken();
+        if (!token || !cfg.siteUrl) {
+          setCurrentUser(null);
+          setCurrentRole(null);
+          return;
+        }
+        const valid = await wpValidateToken(cfg.siteUrl, token);
+        if (!valid) {
+          clearSession();
+          setCurrentUser(null);
+          setCurrentRole(null);
+          return;
+        }
+        const session = readSession();
+        const user = session ? await db.users.get(session.userId) : null;
+        if (!user) {
+          // Token is valid but local link missing — force re-login.
+          clearSession();
+          setCurrentUser(null);
+          setCurrentRole(null);
+          return;
+        }
+        const role = user.roleId ? await db.roles.get(user.roleId) : null;
+        setCurrentUser(user);
+        setCurrentRole(role);
+        return;
+      }
+
+      // Local mode
       const session = readSession();
       if (!session) {
         setCurrentUser(null);
@@ -100,6 +211,28 @@ export function useAuth() {
   }, [refresh]);
 
   const login = useCallback(async (username, password) => {
+    const mode = await getAuthMode();
+    if (mode === 'wordpress') {
+      const cfg = await getWpAuthConfig();
+      if (!cfg.siteUrl) throw new Error('WordPress site URL is not configured (Settings → Authentication)');
+      const { token, userEmail, userDisplayName, userNicename } = await wpGetToken(cfg.siteUrl, username, password);
+      localStorage.setItem(WP_TOKEN_KEY, token);
+      let wpRoles = [];
+      try {
+        const me = await wpGetMe(cfg.siteUrl, token);
+        if (me?.roles) wpRoles = me.roles;
+      } catch { /* profile fetch optional */ }
+      const user = await upsertWpUser({
+        username: userNicename || username,
+        email: userEmail,
+        displayName: userDisplayName,
+        wpRoles,
+      });
+      writeSession(user.id);
+      window.dispatchEvent(new Event('auth-changed'));
+      return user;
+    }
+
     const user = await db.users.findByUsername(username);
     if (!user) throw new Error('Username not found');
     const ok = await verifyPassword(password, user.passwordHash);
@@ -125,6 +258,7 @@ export function useAuth() {
 
   return {
     currentUser, currentRole, hasUsers, loading, permissions,
+    authMode, wpConfig,
     login, logout, refresh, can,
     isSuperAdmin, canManageUsers, canManageRoles,
   };
@@ -147,7 +281,7 @@ export async function createUser({ username, password, email, firstName = '', la
     id, username: username.trim(),
     email: (email || '').trim(),
     firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(),
-    roleId, passwordHash, createdAt: new Date().toISOString(),
+    roleId, passwordHash, source: 'local', createdAt: new Date().toISOString(),
   };
   await db.users.set(id, user);
   return user;
