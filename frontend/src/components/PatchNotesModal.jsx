@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.177', date: '2026-05-10', title: 'Bulk Edit: "Rename Columns" — edit inventory column header names inline, persisted and reflected in the Inventory table and column reorder modal; Reset restores defaults' },
   { version: '0.0.176', date: '2026-05-10', title: 'Size and Net Weight are now separate fields — Size = lab labeled dose (own column + Quick Edit), Net Weight = post-testing actual (drives Sales Readiness); import no longer maps Size into Net Weight' },
   { version: '0.0.175', date: '2026-05-10', title: 'Fix: CSV import now keeps every variant — uses the unique SKU as product identity so same-named items (e.g. AOD-9604 5mg vs 10mg) no longer overwrite each other; product name shown as sub-label' },
   { version: '0.0.174', date: '2026-05-10', title: 'Resilience: error boundaries — a crash in one tab now shows a contained "something went wrong" panel with Try again / Reload instead of blanking the whole app; nav stays usable' },
