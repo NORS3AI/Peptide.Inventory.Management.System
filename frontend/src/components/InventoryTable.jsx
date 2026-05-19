@@ -19,6 +19,7 @@ const DEFAULT_COLUMNS = [
   { id: 'quantity', label: 'Quantity', field: 'quantity', sortable: true },
   { id: 'labeledCount', label: 'Labeled', field: 'labeledCount', sortable: true },
   { id: 'offBooks', label: 'Off Books', field: 'offBooks', sortable: true },
+  { id: 'reserve', label: 'Off-Book Reserve', field: 'reserve', sortable: true },
   { id: 'status', label: 'Status', field: 'status', sortable: true },
   { id: 'batchNumber', label: 'Batch #', field: 'batchNumber', sortable: true },
   { id: 'size', label: 'Size', field: 'size', sortable: true },
@@ -233,7 +234,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       }
 
       // Handle numeric sorting
-      if (sortField === 'quantity' || sortField === 'orderedQty' || sortField === 'offBooks') {
+      if (sortField === 'quantity' || sortField === 'orderedQty' || sortField === 'offBooks' || sortField === 'reserve') {
         aVal = Number(aVal) || 0;
         bVal = Number(bVal) || 0;
       }
