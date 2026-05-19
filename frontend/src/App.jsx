@@ -103,7 +103,9 @@ function App() {
     );
   }
 
-  if (!auth.hasUsers) {
+  // Local mode shows the first-run wizard; WordPress mode never does
+  // (accounts live in WordPress — just show the login screen).
+  if (auth.authMode !== 'wordpress' && !auth.hasUsers) {
     return (
       <ToastProvider>
         <SetupWizard />

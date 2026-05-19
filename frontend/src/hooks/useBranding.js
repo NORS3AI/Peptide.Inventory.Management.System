@@ -12,7 +12,7 @@ export const DEFAULT_BRANDING = {
 function applyBrowserChrome(branding) {
   if (branding.browserTitle) document.title = branding.browserTitle;
 
-  const href = branding.browserIcon || '/Peptide.Inventory.Management.System/vite.svg';
+  const href = branding.browserIcon || './vite.svg';
   let link = document.querySelector("link[rel='icon']");
   if (!link) {
     link = document.createElement('link');
