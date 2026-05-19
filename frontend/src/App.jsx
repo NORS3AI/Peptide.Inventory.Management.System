@@ -12,6 +12,7 @@ import { db } from './lib/db';
 import Login from './components/Login';
 import SetupWizard from './components/SetupWizard';
 import Accounts from './components/Accounts';
+import ErrorBoundary from './components/ErrorBoundary';
 import CSVUpload from './components/CSVUpload';
 import PickListScanner from './components/PickListScanner';
 import InventoryTable from './components/InventoryTable';
@@ -125,6 +126,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <ErrorBoundary label="PIMS">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors overflow-x-hidden">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
@@ -244,7 +246,7 @@ function App() {
             <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
           </div>
         ) : (
-          <>
+          <ErrorBoundary key={activeTab} label={`the ${activeTab} tab`}>
             {activeTab === 'dashboard' && <DashboardView stats={stats} peptides={peptides} thresholds={thresholds} onNavigate={setActiveTab} />}
             {activeTab === 'batch' && <BatchView />}
             {activeTab === 'boxes' && <BoxesView />}
@@ -266,7 +268,7 @@ function App() {
             {activeTab === 'daily' && <DailyView />}
             {activeTab === 'woocommerce' && <WooCommerce onOpenSettings={() => setShowSettings(true)} />}
             {activeTab === 'accounts' && <Accounts />}
-          </>
+          </ErrorBoundary>
         )}
       </main>
 
@@ -283,6 +285,7 @@ function App() {
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <PatchNotesModal isOpen={showPatchNotes} onClose={() => setShowPatchNotes(false)} currentVersion={packageJson.version} />
     </div>
+      </ErrorBoundary>
     </ToastProvider>
   );
 }
