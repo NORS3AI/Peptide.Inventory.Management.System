@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.173', date: '2026-05-10', title: 'Fix: Accounts crashed the whole app in WordPress mode (missing RotateCcw icon import) — blank screen resolved' },
   { version: '0.0.172', date: '2026-05-10', title: 'Accounts: Sync WordPress Users — pull the WP directory, assign PIMS roles before login; customers skipped by default (opt-in toggle); Source column (WordPress/Local); creation-lock UI hidden in WordPress mode' },
   { version: '0.0.171', date: '2026-05-10', title: 'WooCommerce: configurable auto-sync interval (15/30/60 min, runs while a tab is open) and a Clear synced data button to wipe test orders/products/customers before go-live' },
   { version: '0.0.170', date: '2026-05-10', title: 'WordPress JWT auth mode (Settings → Authentication): real server-verified login against your WP site, first WP user becomes Super Admin, configurable default role; relative build base so PIMS runs from any domain/path' },

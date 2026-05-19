@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound, Lock, Unlock } from 'lucide-react';
+import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound, Lock, Unlock, RotateCcw } from 'lucide-react';
 import { db } from '../lib/db';
 import { TABS, emptyPermissions } from '../lib/permissions';
 import { useToast } from './Toast';
