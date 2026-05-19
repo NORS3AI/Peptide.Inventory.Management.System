@@ -6,6 +6,7 @@ import { useInventory } from './hooks/useInventory';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useBranding } from './hooks/useBranding';
 import { useAuth } from './hooks/useAuth';
+import { useWooAutoSync } from './hooks/useWooCommerce';
 import { ToastProvider } from './components/Toast';
 import { db } from './lib/db';
 import Login from './components/Login';
@@ -37,6 +38,7 @@ function App() {
   const { isDark, toggle } = useDarkMode();
   const { branding } = useBranding();
   const auth = useAuth();
+  useWooAutoSync();
   const [orders, setOrders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);

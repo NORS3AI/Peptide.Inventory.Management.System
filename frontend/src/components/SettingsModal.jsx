@@ -690,6 +690,42 @@ export default function SettingsModal({ isOpen, onClose }) {
                     <div>{wcTestState.message}</div>
                   </div>
                 )}
+
+                {/* Auto-sync */}
+                <div className="pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Auto-sync interval</label>
+                  <select
+                    value={wcApi.autoSyncMinutes}
+                    onChange={e => wcApi.updateAutoSync(Number(e.target.value))}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={0}>Off (manual sync only)</option>
+                    <option value={15}>Every 15 minutes</option>
+                    <option value={30}>Every 30 minutes</option>
+                    <option value={60}>Every 60 minutes</option>
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Auto-sync only runs while PIMS is open in a browser tab — keep a tab open on a dashboard screen for hands-off refresh. There is no server to sync in the background.
+                  </p>
+                </div>
+
+                {/* Clear synced data */}
+                <div className="pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 mb-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>Clears cached orders, products, and customers (test data) without touching your WooCommerce store or the saved connection. Run this right before go-live, then Sync to pull only real orders.</div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm('Clear all synced WooCommerce data (orders, products, customers) from PIMS? Your live store is not affected. You can re-sync afterward.')) return;
+                      await wcApi.clearData();
+                      success('Synced WooCommerce data cleared');
+                    }}
+                    className="px-3 py-1.5 text-sm border border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md font-medium"
+                  >
+                    Clear synced data
+                  </button>
+                </div>
               </div>
             </div>
 
