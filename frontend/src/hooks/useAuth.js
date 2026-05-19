@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { db } from '../lib/db';
 import { hashPassword, verifyPassword, generateUserId } from '../lib/auth';
 import { DEFAULT_ROLES, emptyPermissions } from '../lib/permissions';
-import { wpGetToken, wpValidateToken, wpGetMe } from '../lib/wpAuth';
+import { wpGetToken, wpValidateToken, wpGetMe, wpListUsers } from '../lib/wpAuth';
 
 const SESSION_KEY = 'pims_session';
 const WP_TOKEN_KEY = 'pims_wp_token';
@@ -262,6 +262,66 @@ export function useAuth() {
     login, logout, refresh, can,
     isSuperAdmin, canManageUsers, canManageRoles,
   };
+}
+
+/**
+ * Pull the WordPress user directory and mirror it into PIMS so a
+ * Super Admin can assign PIMS roles before people log in. Existing
+ * role assignments are preserved; new users get the configured
+ * default role. By default WooCommerce buyers (users whose only WP
+ * role is "customer") are skipped to keep Accounts focused on staff.
+ */
+export async function syncWordPressUsers({ includeCustomers = false } = {}) {
+  const mode = await getAuthMode();
+  if (mode !== 'wordpress') throw new Error('Switch Authentication to WordPress mode first');
+  const cfg = await getWpAuthConfig();
+  if (!cfg.siteUrl) throw new Error('WordPress site URL is not configured');
+  const token = getWpToken();
+  if (!token) throw new Error('Not signed in to WordPress');
+
+  await ensureDefaultRoles();
+  const wpUsers = await wpListUsers(cfg.siteUrl, token);
+  let imported = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const wu of wpUsers) {
+    const roles = wu.roles || [];
+    const onlyCustomer = roles.length > 0 && roles.every(r => r === 'customer');
+    if (onlyCustomer && !includeCustomers) { skipped += 1; continue; }
+
+    const username = wu.slug || wu.name;
+    const existing = await db.users.findByUsername(username);
+    if (existing) {
+      await db.users.set(existing.id, {
+        ...existing,
+        email: wu.email || existing.email,
+        wpRoles: roles,
+        source: 'wordpress',
+      });
+      updated += 1;
+      continue;
+    }
+    const totalUsers = await db.users.count();
+    const roleId = totalUsers === 0 ? 'role_super_admin' : (cfg.defaultRoleId || 'role_guest');
+    const id = generateUserId();
+    const [firstName, ...rest] = (wu.name || username).split(' ');
+    await db.users.set(id, {
+      id,
+      username,
+      email: wu.email || '',
+      firstName: (firstName || '').trim(),
+      lastName: rest.join(' ').trim(),
+      phone: '',
+      roleId,
+      source: 'wordpress',
+      wpRoles: roles,
+      createdAt: new Date().toISOString(),
+    });
+    imported += 1;
+  }
+  window.dispatchEvent(new Event('auth-changed'));
+  return { imported, updated, skipped, total: wpUsers.length };
 }
 
 export async function setUserPassword(userId, newPassword) {

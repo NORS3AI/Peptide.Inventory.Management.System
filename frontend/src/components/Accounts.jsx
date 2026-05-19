@@ -3,7 +3,7 @@ import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound, Lock, Unlock } fr
 import { db } from '../lib/db';
 import { TABS, emptyPermissions } from '../lib/permissions';
 import { useToast } from './Toast';
-import { useAuth, createUser, updateUser } from '../hooks/useAuth';
+import { useAuth, createUser, updateUser, syncWordPressUsers } from '../hooks/useAuth';
 import { generateRoleId } from '../lib/auth';
 
 const ACCOUNT_TABS = [
@@ -19,7 +19,7 @@ export async function isAccountCreationEnabled() {
 }
 
 export default function Accounts() {
-  const { currentUser, canManageUsers, canManageRoles, refresh, isSuperAdmin } = useAuth();
+  const { currentUser, canManageUsers, canManageRoles, refresh, isSuperAdmin, authMode } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -81,6 +81,7 @@ export default function Accounts() {
           currentUser={currentUser}
           creationEnabled={creationEnabled}
           isSuperAdmin={isSuperAdmin}
+          authMode={authMode}
           onToggleCreation={async (next) => {
             await db.settings.set(CREATION_ENABLED_KEY, next);
             setCreationEnabled(next);
@@ -106,11 +107,27 @@ function RoleBadge({ role }) {
   );
 }
 
-function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnabled, isSuperAdmin, onToggleCreation }) {
+function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnabled, isSuperAdmin, onToggleCreation, authMode }) {
   const { success, error: showError } = useToast();
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [pwResetFor, setPwResetFor] = useState(null);
+  const [wpSyncing, setWpSyncing] = useState(false);
+  const [includeCustomers, setIncludeCustomers] = useState(false);
+  const isWordPress = authMode === 'wordpress';
+
+  const handleWpSync = async () => {
+    setWpSyncing(true);
+    try {
+      const r = await syncWordPressUsers({ includeCustomers });
+      success(`WordPress users synced — ${r.imported} new, ${r.updated} updated${r.skipped ? `, ${r.skipped} customer(s) skipped` : ''}`);
+      await reload();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setWpSyncing(false);
+    }
+  };
 
   const blank = {
     username: '', password: '', email: '', firstName: '', lastName: '',
@@ -172,52 +189,81 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnab
 
   return (
     <div className="space-y-3">
-      {/* Account creation lock */}
-      <div className={`flex items-center justify-between p-3 rounded-lg border ${
-        creationEnabled
-          ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-          : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-      }`}>
-        <div className="flex items-center gap-2 text-sm">
-          {creationEnabled ? (
-            <Unlock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          ) : (
-            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          )}
-          <div>
-            <div className="font-medium text-gray-900 dark:text-white">
-              {creationEnabled ? 'Account creation is enabled' : 'Account creation is locked'}
+      {/* WordPress mode: accounts come from WP, not the local creation flow */}
+      {isWordPress && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <div className="text-sm">
+            <div className="font-medium text-gray-900 dark:text-white">Accounts are managed in WordPress</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              Sync the WordPress user directory, then assign PIMS roles here. WooCommerce customers are skipped unless you opt in.
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {creationEnabled
-                ? 'Anyone with the right role can create new accounts.'
-                : "New accounts can't be created until a Super Admin re-enables this."}
-            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+              <input type="checkbox" checked={includeCustomers} onChange={e => setIncludeCustomers(e.target.checked)} />
+              Include customers
+            </label>
+            <button
+              onClick={handleWpSync}
+              disabled={wpSyncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md text-sm font-medium"
+            >
+              <RotateCcw className={`w-4 h-4 ${wpSyncing ? 'animate-spin' : ''}`} />
+              {wpSyncing ? 'Syncing…' : 'Sync WordPress Users'}
+            </button>
           </div>
         </div>
-        <label className="inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={creationEnabled}
-            onChange={e => onToggleCreation(e.target.checked)}
-            disabled={!isSuperAdmin}
-            className="sr-only peer"
-          />
-          <div
-            className={`relative w-11 h-6 rounded-full transition-colors ${
-              isSuperAdmin ? '' : 'opacity-50 cursor-not-allowed'
-            } ${creationEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-            title={isSuperAdmin ? '' : 'Only Super Admin can change this'}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                creationEnabled ? 'translate-x-5' : ''
-              }`}
-            />
-          </div>
-        </label>
-      </div>
+      )}
 
+      {/* Local mode: account creation lock */}
+      {!isWordPress && (
+        <div className={`flex items-center justify-between p-3 rounded-lg border ${
+          creationEnabled
+            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+        }`}>
+          <div className="flex items-center gap-2 text-sm">
+            {creationEnabled ? (
+              <Unlock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            ) : (
+              <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            )}
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">
+                {creationEnabled ? 'Account creation is enabled' : 'Account creation is locked'}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {creationEnabled
+                  ? 'Anyone with the right role can create new accounts.'
+                  : "New accounts can't be created until a Super Admin re-enables this."}
+              </div>
+            </div>
+          </div>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={creationEnabled}
+              onChange={e => onToggleCreation(e.target.checked)}
+              disabled={!isSuperAdmin}
+              className="sr-only peer"
+            />
+            <div
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                isSuperAdmin ? '' : 'opacity-50 cursor-not-allowed'
+              } ${creationEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+              title={isSuperAdmin ? '' : 'Only Super Admin can change this'}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                  creationEnabled ? 'translate-x-5' : ''
+                }`}
+              />
+            </div>
+          </label>
+        </div>
+      )}
+
+      {!isWordPress && (
       <div className="flex justify-end">
         <button
           onClick={startCreate}
@@ -229,6 +275,7 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnab
           New User
         </button>
       </div>
+      )}
 
       {(creating || editing) && (
         <UserForm
@@ -247,7 +294,7 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnab
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                {['Username', 'Name', 'Email', 'Phone', 'Role', 'Actions'].map(h => (
+                {['Username', 'Name', 'Email', 'Phone', 'Role', 'Source', 'Actions'].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{h}</th>
                 ))}
               </tr>
@@ -260,6 +307,15 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnab
                   <td className="px-3 py-2">{u.email || '—'}</td>
                   <td className="px-3 py-2">{u.phone || '—'}</td>
                   <td className="px-3 py-2"><RoleBadge role={rolesById[u.roleId]} /></td>
+                  <td className="px-3 py-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${
+                      u.source === 'wordpress'
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}>
+                      {u.source === 'wordpress' ? 'WordPress' : 'Local'}
+                    </span>
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
                       <button onClick={() => startEdit(u)} className="p-1 text-gray-500 hover:text-blue-600" title="Edit"><Edit className="w-4 h-4" /></button>
