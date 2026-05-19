@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Save, AlertCircle, CheckCircle2, Edit3 } from 'lucide-react';
+import { X, Save, AlertCircle, CheckCircle2, Edit3, Type, RotateCcw } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 
@@ -9,6 +9,9 @@ export default function BulkEditModal({ isOpen, onClose, peptides, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const [hiddenColumns, setHiddenColumns] = useState([]);
+  const [customLabels, setCustomLabels] = useState({});
+  const [renameMode, setRenameMode] = useState(false);
+  const [labelDraft, setLabelDraft] = useState({});
   const modalRef = useRef(null);
   const { success, error: showError } = useToast();
 
@@ -32,17 +35,59 @@ export default function BulkEditModal({ isOpen, onClose, peptides, onSave }) {
     col => col.id === 'peptideId' || !hiddenColumns.includes(col.id)
   );
 
-  // Load hidden columns setting from database
+  // Load hidden columns + custom labels from database
   useEffect(() => {
     if (!isOpen) return;
-    const loadHidden = async () => {
+    const loadSettings = async () => {
       const saved = await db.settings.get('hiddenColumns');
       if (saved && Array.isArray(saved)) {
         setHiddenColumns(saved);
       }
+      const labels = await db.settings.get('columnLabels');
+      setCustomLabels(labels && typeof labels === 'object' ? labels : {});
+      setRenameMode(false);
     };
-    loadHidden();
+    loadSettings();
   }, [isOpen]);
+
+  const labelFor = (col) => (customLabels[col.id] || '').trim() || col.label;
+
+  const startRename = () => {
+    const seed = {};
+    allColumns.forEach(col => { seed[col.id] = labelFor(col); });
+    setLabelDraft(seed);
+    setRenameMode(true);
+  };
+
+  const cancelRename = () => {
+    setRenameMode(false);
+    setLabelDraft({});
+  };
+
+  const saveRename = async () => {
+    // Keep only labels that differ from the built-in default
+    const next = {};
+    allColumns.forEach(col => {
+      const v = (labelDraft[col.id] || '').trim();
+      if (v && v !== col.label) next[col.id] = v;
+    });
+    await db.settings.set('columnLabels', next);
+    setCustomLabels(next);
+    setRenameMode(false);
+    window.dispatchEvent(new Event('pims-columns-changed'));
+    success('Column names saved');
+  };
+
+  const resetRename = async () => {
+    if (!window.confirm('Reset all column names back to their defaults?')) return;
+    await db.settings.set('columnLabels', {});
+    setCustomLabels({});
+    const seed = {};
+    allColumns.forEach(col => { seed[col.id] = col.label; });
+    setLabelDraft(seed);
+    window.dispatchEvent(new Event('pims-columns-changed'));
+    success('Column names reset to defaults');
+  };
 
   // Initialize edit data from peptides
   useEffect(() => {
@@ -159,19 +204,54 @@ export default function BulkEditModal({ isOpen, onClose, peptides, onSave }) {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {hasChanges && (
+            {hasChanges && !renameMode && (
               <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
                 Unsaved changes
               </span>
             )}
-            <button
-              onClick={handleSaveAll}
-              disabled={!hasChanges || saving}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving...' : 'Save All'}</span>
-            </button>
+            {renameMode ? (
+              <>
+                <button
+                  onClick={resetRename}
+                  className="inline-flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reset</span>
+                </button>
+                <button
+                  onClick={cancelRename}
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveRename}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Names</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={startRename}
+                  title="Rename column headers"
+                  className="inline-flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                >
+                  <Type className="w-4 h-4" />
+                  <span>Rename Columns</span>
+                </button>
+                <button
+                  onClick={handleSaveAll}
+                  disabled={!hasChanges || saving}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save All'}</span>
+                </button>
+              </>
+            )}
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
@@ -211,7 +291,17 @@ export default function BulkEditModal({ isOpen, onClose, peptides, onSave }) {
                     key={col.id}
                     className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
                   >
-                    {col.label}
+                    {renameMode ? (
+                      <input
+                        type="text"
+                        value={labelDraft[col.id] ?? ''}
+                        onChange={(e) => setLabelDraft(prev => ({ ...prev, [col.id]: e.target.value }))}
+                        placeholder={col.label}
+                        className="w-full min-w-[6rem] px-2 py-1 text-xs normal-case border border-blue-300 dark:border-blue-700 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    ) : (
+                      labelFor(col)
+                    )}
                   </th>
                 ))}
               </tr>
