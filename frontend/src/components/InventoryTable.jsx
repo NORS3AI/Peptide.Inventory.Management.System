@@ -451,7 +451,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       return (
         <div>
           <div>{peptide.peptideId}</div>
-          {peptide.peptideName && (
+          {peptide.peptideName && peptide.peptideName !== peptide.peptideId && (
             <div className="text-xs text-gray-400 dark:text-gray-500">{peptide.peptideName}</div>
           )}
         </div>

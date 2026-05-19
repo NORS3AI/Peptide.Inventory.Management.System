@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.175', date: '2026-05-10', title: 'Fix: CSV import now keeps every variant — uses the unique SKU as product identity so same-named items (e.g. AOD-9604 5mg vs 10mg) no longer overwrite each other; product name shown as sub-label' },
   { version: '0.0.174', date: '2026-05-10', title: 'Resilience: error boundaries — a crash in one tab now shows a contained "something went wrong" panel with Try again / Reload instead of blanking the whole app; nav stays usable' },
   { version: '0.0.173', date: '2026-05-10', title: 'Fix: Accounts crashed the whole app in WordPress mode (missing RotateCcw icon import) — blank screen resolved' },
   { version: '0.0.172', date: '2026-05-10', title: 'Accounts: Sync WordPress Users — pull the WP directory, assign PIMS roles before login; customers skipped by default (opt-in toggle); Source column (WordPress/Local); creation-lock UI hidden in WordPress mode' },

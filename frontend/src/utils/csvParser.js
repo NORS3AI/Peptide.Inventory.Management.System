@@ -127,6 +127,19 @@ export function transformPeptideData(rawData, options = {}) {
         }
       });
 
+      // Variants (e.g. AOD-9604 5mg vs 10mg) share a product name but have
+      // distinct SKUs. Identity is keyed off peptideId everywhere, so when a
+      // SKU is present use it as the unique identity and keep the original
+      // product name as the readable label. Without this, two rows with the
+      // same product name collide and the second overwrites the first.
+      const skuValue = (peptide.peptideName || '').trim();
+      const productLabel = (peptide.peptideId || '').trim();
+      if (skuValue) {
+        peptide.sku = skuValue;
+        peptide.peptideId = skuValue;
+        peptide.peptideName = productLabel || skuValue;
+      }
+
       return peptide;
     });
 }
