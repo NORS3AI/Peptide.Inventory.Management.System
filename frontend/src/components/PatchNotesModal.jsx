@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.179', date: '2026-05-10', title: 'Fix: Manage Columns modal — checkboxes/reorder were unclickable; now portaled to body with a guarded close so column show/hide and reordering work again' },
   { version: '0.0.178', date: '2026-05-10', title: 'New "Off-Book Reserve" column — imported from a CSV "OFF BOOKS" column, manually maintained stock set aside for replacements; separate from the auto-calc "Off Books" and never affects live inventory; editable in Quick/Bulk Edit' },
   { version: '0.0.177', date: '2026-05-10', title: 'Bulk Edit: "Rename Columns" — edit inventory column header names inline, persisted and reflected in the Inventory table and column reorder modal; Reset restores defaults' },
   { version: '0.0.176', date: '2026-05-10', title: 'Size and Net Weight are now separate fields — Size = lab labeled dose (own column + Quick Edit), Net Weight = post-testing actual (drives Sales Readiness); import no longer maps Size into Net Weight' },
