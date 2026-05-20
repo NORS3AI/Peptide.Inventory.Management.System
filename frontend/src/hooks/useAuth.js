@@ -11,14 +11,26 @@ const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 const AUTH_MODE_KEY = 'authMode';            // 'local' | 'wordpress'
 const WP_AUTH_CONFIG_KEY = 'wpAuthConfig';   // { siteUrl, defaultRoleId }
 
+// Built-in defaults so a fresh browser (no IndexedDB yet) lands on
+// the WordPress login screen instead of the local first-run wizard.
+// A Super Admin can still switch to local mode in Settings.
+const DEFAULT_AUTH_MODE = 'wordpress';
+const DEFAULT_WP_SITE_URL = 'https://superstitionresearch.com';
+const DEFAULT_WP_ROLE_ID = 'role_guest';
+
 export async function getAuthMode() {
   const m = await db.settings.get(AUTH_MODE_KEY);
-  return m === 'wordpress' ? 'wordpress' : 'local';
+  if (m === 'wordpress' || m === 'local') return m;
+  return DEFAULT_AUTH_MODE;
 }
 
 export async function getWpAuthConfig() {
   const c = await db.settings.get(WP_AUTH_CONFIG_KEY);
-  return { siteUrl: '', defaultRoleId: 'role_guest', ...(c || {}) };
+  return {
+    siteUrl: DEFAULT_WP_SITE_URL,
+    defaultRoleId: DEFAULT_WP_ROLE_ID,
+    ...(c || {}),
+  };
 }
 
 export async function setAuthMode(mode) {
@@ -136,8 +148,8 @@ export function useAuth() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
   const [hasUsers, setHasUsers] = useState(false);
-  const [authMode, setAuthModeState] = useState('local');
-  const [wpConfig, setWpConfig] = useState({ siteUrl: '', defaultRoleId: 'role_guest' });
+  const [authMode, setAuthModeState] = useState(DEFAULT_AUTH_MODE);
+  const [wpConfig, setWpConfig] = useState({ siteUrl: DEFAULT_WP_SITE_URL, defaultRoleId: DEFAULT_WP_ROLE_ID });
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
