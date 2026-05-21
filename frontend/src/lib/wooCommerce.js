@@ -82,6 +82,56 @@ async function fetchAllPaginated(connection, path, baseParams = {}, onPage) {
   return all;
 }
 
+/**
+ * Bulk-update WooCommerce product stock via the batch endpoint.
+ * Requires a Read/Write consumer key (a Read-only key returns 401
+ * here even though it works for the fetch endpoints).
+ *
+ *   updates: [{ id, stock_quantity, manage_stock }]
+ *
+ * Batches are capped at 100 products per request (WC default limit).
+ */
+async function wcBatchUpdateProducts(connection, updates) {
+  if (!connection?.siteUrl) throw new Error('Not connected');
+  const base = normalizeBaseUrl(connection.siteUrl);
+  const auth = buildAuthHeader(connection.consumerKey, connection.consumerSecret);
+  const chunks = [];
+  for (let i = 0; i < updates.length; i += 100) {
+    chunks.push(updates.slice(i, i + 100));
+  }
+  let updatedCount = 0;
+  const failures = [];
+  for (const chunk of chunks) {
+    const res = await fetch(`${base}/products/batch`, {
+      method: 'POST',
+      headers: {
+        Authorization: auth,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ update: chunk }),
+    });
+    const text = await res.text().catch(() => '');
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
+    if (!res.ok) {
+      const msg = data?.message ? data.message.replace(/<[^>]*>/g, '') : `WooCommerce ${res.status} ${res.statusText}`;
+      // Whole chunk failed; record one failure per item so the caller can report.
+      for (const item of chunk) failures.push({ id: item.id, error: msg });
+      continue;
+    }
+    if (Array.isArray(data?.update)) {
+      for (const r of data.update) {
+        if (r?.error) failures.push({ id: r.id, error: r.error.message || 'Update error' });
+        else updatedCount += 1;
+      }
+    } else {
+      updatedCount += chunk.length;
+    }
+  }
+  return { updatedCount, failures };
+}
+
 export const wc = {
   testConnection,
   fetchOrders: (connection, opts = {}, onPage) =>
@@ -90,6 +140,7 @@ export const wc = {
     fetchAllPaginated(connection, '/products', { orderby: 'id', order: 'asc' }, onPage),
   fetchCustomers: (connection, _opts = {}, onPage) =>
     fetchAllPaginated(connection, '/customers', { orderby: 'id', order: 'asc' }, onPage),
+  batchUpdateProducts: wcBatchUpdateProducts,
 };
 
 export function summarizeOrder(o) {
