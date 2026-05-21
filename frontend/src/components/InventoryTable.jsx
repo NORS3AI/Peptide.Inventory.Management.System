@@ -227,10 +227,14 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       let aVal = a[sortField];
       let bVal = b[sortField];
 
-      // Use nickname for product name sorting when available
-      if (sortField === 'peptideId' || sortField === 'peptideName') {
-        aVal = a.nickname || a[sortField] || '';
-        bVal = b.nickname || b[sortField] || '';
+      // Product column shows nickname when set, so sort by nickname for
+      // that column. SKU sort always uses the actual peptideName.
+      if (sortField === 'peptideId') {
+        aVal = a.nickname || a.peptideId || '';
+        bVal = b.nickname || b.peptideId || '';
+      } else if (sortField === 'peptideName') {
+        aVal = a.peptideName || '';
+        bVal = b.peptideName || '';
       }
 
       // Handle numeric sorting
@@ -466,7 +470,8 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // Product column: show nickname INSTEAD of product ID when set
+    // Product column: nickname (when set) replaces the product id;
+    // this is intentional and user-controlled via Quick Edit.
     if (column.id === 'peptideId') {
       if (peptide.nickname) {
         return peptide.nickname;
@@ -481,9 +486,10 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // SKU column: show nickname instead of product name when set
+    // SKU column: always show the actual peptideName. Nickname never
+    // replaces the SKU — the SKU stays authoritative.
     if (column.id === 'peptideName') {
-      return peptide.nickname || peptide.peptideName || '-';
+      return peptide.peptideName || '-';
     }
 
     const value = peptide[column.field];
