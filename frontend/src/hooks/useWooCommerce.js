@@ -142,6 +142,53 @@ export function useWooCommerce() {
     window.dispatchEvent(new Event('woocommerce-autosync-changed'));
   }, []);
 
+  /**
+   * Push PIMS inventory levels to WooCommerce as live stock.
+   *
+   * Stock formula = max(0, labeledCount − reserve). Only items
+   * labeled and not held back as Off-Book Reserve are sellable.
+   *
+   * Requires a Read/Write WC consumer key.
+   */
+  const pushInventory = useCallback(async () => {
+    if (!connection?.siteUrl) throw new Error('WooCommerce is not connected');
+    // Always fetch a fresh product list so we have current WC IDs and SKUs.
+    const wcProducts = await wc.fetchProducts(connection);
+    const productBySku = new Map();
+    for (const p of wcProducts) {
+      if (p.sku) productBySku.set(String(p.sku).trim(), p);
+    }
+
+    const peptides = await db.peptides.getAll();
+    const updates = [];
+    const skipped = [];
+    for (const peptide of peptides) {
+      const sku = String(peptide.peptideId || '').trim();
+      if (!sku) { skipped.push({ peptide, reason: 'no SKU' }); continue; }
+      const wcProduct = productBySku.get(sku);
+      if (!wcProduct) { skipped.push({ peptide, reason: 'no matching WC SKU' }); continue; }
+      const labeled = Number(peptide.labeledCount) || 0;
+      const reserve = Number(peptide.reserve) || 0;
+      const sellable = Math.max(0, labeled - reserve);
+      updates.push({
+        id: wcProduct.id,
+        manage_stock: true,
+        stock_quantity: sellable,
+      });
+    }
+
+    if (updates.length === 0) {
+      return { updated: 0, skipped, failures: [], total: peptides.length };
+    }
+    const { updatedCount, failures } = await wc.batchUpdateProducts(connection, updates);
+    return {
+      updated: updatedCount,
+      skipped,
+      failures,
+      total: peptides.length,
+    };
+  }, [connection]);
+
   const clearData = useCallback(async () => {
     await clearWooData();
     setStatusState(DEFAULT_STATUS);
@@ -154,6 +201,7 @@ export function useWooCommerce() {
     saveConnection, testConnection,
     syncOrders, syncProducts, syncCustomers,
     updateAutoSync, clearData,
+    pushInventory,
   };
 }
 

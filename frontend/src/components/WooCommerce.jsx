@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ShoppingCart, RefreshCw, AlertTriangle, ExternalLink, Settings as SettingsIcon } from 'lucide-react';
+import { ShoppingCart, RefreshCw, AlertTriangle, ExternalLink, Settings as SettingsIcon, Upload, CheckCircle2 } from 'lucide-react';
 import { db } from '../lib/db';
 import { useWooCommerce } from '../hooks/useWooCommerce';
 import { useToast } from './Toast';
@@ -33,12 +33,31 @@ function StatusPill({ statusEntry, label }) {
 }
 
 export default function WooCommerce({ onOpenSettings }) {
-  const { isConfigured, status, syncing, syncOrders, syncProducts, syncCustomers } = useWooCommerce();
+  const { isConfigured, status, syncing, syncOrders, syncProducts, syncCustomers, pushInventory } = useWooCommerce();
   const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [pushing, setPushing] = useState(false);
+  const [pushConfirm, setPushConfirm] = useState(false);
+  const [pushResult, setPushResult] = useState(null);
+
+  const runPushInventory = async () => {
+    setPushConfirm(false);
+    setPushing(true);
+    setPushResult(null);
+    try {
+      const r = await pushInventory();
+      setPushResult(r);
+      success(`Pushed stock for ${r.updated} product(s) to WooCommerce`);
+      await loadAll();
+    } catch (err) {
+      showError(`Push failed: ${err.message}`);
+    } finally {
+      setPushing(false);
+    }
+  };
 
   const loadAll = async () => {
     setOrders(await db.woocommerce.orders.getAll());
@@ -124,7 +143,67 @@ export default function WooCommerce({ onOpenSettings }) {
             onSync={() => runSync(syncCustomers, 'customers')}
           />
         </div>
+
+        {/* Push PIMS stock → WooCommerce */}
+        <div className="mt-4 p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-sm">
+              <div className="font-medium text-gray-900 dark:text-white">Push PIMS stock to WooCommerce</div>
+              <div className="text-xs text-amber-800 dark:text-amber-200 mt-0.5">
+                Sets each WC product's <strong>stock_quantity = max(0, labeled − reserve)</strong>, matched by SKU.
+                Requires a <strong>Read/Write</strong> WC API key. WC-side stock edits will be overwritten.
+              </div>
+            </div>
+            <button
+              onClick={() => setPushConfirm(true)}
+              disabled={pushing}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-md font-medium whitespace-nowrap"
+            >
+              <Upload className={`w-4 h-4 ${pushing ? 'animate-pulse' : ''}`} />
+              {pushing ? 'Pushing…' : 'Push to WooCommerce'}
+            </button>
+          </div>
+          {pushResult && (
+            <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded text-xs space-y-1">
+              <div className="flex items-center gap-1.5 text-green-700 dark:text-green-300 font-medium">
+                <CheckCircle2 className="w-4 h-4" /> Updated {pushResult.updated} of {pushResult.total} PIMS products
+              </div>
+              {pushResult.skipped?.length > 0 && (
+                <div className="text-gray-600 dark:text-gray-400">
+                  Skipped {pushResult.skipped.length}: {pushResult.skipped.slice(0, 5).map(s => s.peptide.peptideId).join(', ')}
+                  {pushResult.skipped.length > 5 && ` +${pushResult.skipped.length - 5} more`}
+                </div>
+              )}
+              {pushResult.failures?.length > 0 && (
+                <div className="text-red-700 dark:text-red-300">
+                  {pushResult.failures.length} error(s): {pushResult.failures[0].error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Confirm push */}
+      {pushConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Overwrite live WooCommerce stock?</h3>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+              For every product PIMS matches to a WC SKU, the live <strong>stock_quantity</strong> will be set to
+              <strong> max(0, labeled − reserve)</strong>. Any stock value set directly in WC admin since the last push
+              will be replaced. This affects your live store immediately.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setPushConfirm(false)} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md">Cancel</button>
+              <button onClick={runPushInventory} className="px-3 py-1.5 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-md font-medium">Push now</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">

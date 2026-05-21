@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.183', date: '2026-05-10', title: 'Push to WooCommerce: new button syncs PIMS inventory → live WC stock (formula: labeled − reserve, matched by SKU, batch endpoint); confirm dialog; needs a Read/Write API key' },
   { version: '0.0.182', date: '2026-05-10', title: 'Inventory: nickname replaces the Product column (intended) but never touches the SKU column — SKU stays authoritative; sort matches' },
   { version: '0.0.181', date: '2026-05-10', title: 'Inventory: nickname no longer overwrites the Product or SKU columns — both columns always show the real values; nickname stays editable (Quick Edit) and searchable' },
   { version: '0.0.180', date: '2026-05-10', title: 'First-time visitors land on the WordPress login by default (site URL preset to superstitionresearch.com); local first-run wizard no longer shown to fresh browsers' },
