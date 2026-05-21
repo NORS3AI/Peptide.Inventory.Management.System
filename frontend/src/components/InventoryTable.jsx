@@ -227,10 +227,11 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       let aVal = a[sortField];
       let bVal = b[sortField];
 
-      // Use nickname for product name sorting when available
+      // Sort by the actual column value (nickname no longer overrides
+      // the Product / SKU columns, so it doesn't influence their sort).
       if (sortField === 'peptideId' || sortField === 'peptideName') {
-        aVal = a.nickname || a[sortField] || '';
-        bVal = b.nickname || b[sortField] || '';
+        aVal = a[sortField] || '';
+        bVal = b[sortField] || '';
       }
 
       // Handle numeric sorting
@@ -466,11 +467,10 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // Product column: show nickname INSTEAD of product ID when set
+    // Product column: always show the actual product id (the SKU after
+    // the variant-identity fix). Nickname is kept in the data and is
+    // editable in Quick Edit, but it does not overwrite this column.
     if (column.id === 'peptideId') {
-      if (peptide.nickname) {
-        return peptide.nickname;
-      }
       return (
         <div>
           <div>{peptide.peptideId}</div>
@@ -481,9 +481,11 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // SKU column: show nickname instead of product name when set
+    // SKU column: always show the actual peptideName (the product
+    // label after the variant-identity fix). Nickname does not
+    // overwrite this column either.
     if (column.id === 'peptideName') {
-      return peptide.nickname || peptide.peptideName || '-';
+      return peptide.peptideName || '-';
     }
 
     const value = peptide[column.field];

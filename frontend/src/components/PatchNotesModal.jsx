@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.181', date: '2026-05-10', title: 'Inventory: nickname no longer overwrites the Product or SKU columns — both columns always show the real values; nickname stays editable (Quick Edit) and searchable' },
   { version: '0.0.180', date: '2026-05-10', title: 'First-time visitors land on the WordPress login by default (site URL preset to superstitionresearch.com); local first-run wizard no longer shown to fresh browsers' },
   { version: '0.0.179', date: '2026-05-10', title: 'Fix: Manage Columns modal — checkboxes/reorder were unclickable; now portaled to body with a guarded close so column show/hide and reordering work again' },
   { version: '0.0.178', date: '2026-05-10', title: 'New "Off-Book Reserve" column — imported from a CSV "OFF BOOKS" column, manually maintained stock set aside for replacements; separate from the auto-calc "Off Books" and never affects live inventory; editable in Quick/Bulk Edit' },
