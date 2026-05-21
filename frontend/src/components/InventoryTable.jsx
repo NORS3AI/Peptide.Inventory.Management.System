@@ -227,11 +227,14 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       let aVal = a[sortField];
       let bVal = b[sortField];
 
-      // Sort by the actual column value (nickname no longer overrides
-      // the Product / SKU columns, so it doesn't influence their sort).
-      if (sortField === 'peptideId' || sortField === 'peptideName') {
-        aVal = a[sortField] || '';
-        bVal = b[sortField] || '';
+      // Product column shows nickname when set, so sort by nickname for
+      // that column. SKU sort always uses the actual peptideName.
+      if (sortField === 'peptideId') {
+        aVal = a.nickname || a.peptideId || '';
+        bVal = b.nickname || b.peptideId || '';
+      } else if (sortField === 'peptideName') {
+        aVal = a.peptideName || '';
+        bVal = b.peptideName || '';
       }
 
       // Handle numeric sorting
@@ -467,10 +470,12 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // Product column: always show the actual product id (the SKU after
-    // the variant-identity fix). Nickname is kept in the data and is
-    // editable in Quick Edit, but it does not overwrite this column.
+    // Product column: nickname (when set) replaces the product id;
+    // this is intentional and user-controlled via Quick Edit.
     if (column.id === 'peptideId') {
+      if (peptide.nickname) {
+        return peptide.nickname;
+      }
       return (
         <div>
           <div>{peptide.peptideId}</div>
@@ -481,9 +486,8 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
       );
     }
 
-    // SKU column: always show the actual peptideName (the product
-    // label after the variant-identity fix). Nickname does not
-    // overwrite this column either.
+    // SKU column: always show the actual peptideName. Nickname never
+    // replaces the SKU — the SKU stays authoritative.
     if (column.id === 'peptideName') {
       return peptide.peptideName || '-';
     }
