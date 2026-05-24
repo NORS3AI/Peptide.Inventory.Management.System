@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck, Plug, Ship } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
 import { useWooCommerce } from '../hooks/useWooCommerce';
+import { useShipStation } from '../hooks/useShipStation';
 import { getAuthMode, setAuthMode, getWpAuthConfig, setWpAuthConfig } from '../hooks/useAuth';
 import { wpGetToken } from '../lib/wpAuth';
 
@@ -37,6 +38,41 @@ export default function SettingsModal({ isOpen, onClose }) {
   const wcApi = useWooCommerce();
   const [wcDraft, setWcDraft] = useState({ siteUrl: '', consumerKey: '', consumerSecret: '' });
   const [wcTestState, setWcTestState] = useState({ status: 'idle', message: '' });
+
+  // ShipStation
+  const ssApi = useShipStation();
+  const [ssDraft, setSsDraft] = useState({ apiKey: '', apiSecret: '' });
+  const [ssTestState, setSsTestState] = useState({ status: 'idle', message: '' });
+
+  useEffect(() => {
+    setSsDraft({
+      apiKey: ssApi.connection.apiKey || '',
+      apiSecret: ssApi.connection.apiSecret || '',
+    });
+  }, [ssApi.connection.apiKey, ssApi.connection.apiSecret]);
+
+  const saveShipStation = async () => {
+    await ssApi.saveConnection(ssDraft);
+    success('ShipStation credentials saved');
+  };
+
+  const testShipStation = async () => {
+    setSsTestState({ status: 'running', message: 'Testing…' });
+    try {
+      const r = await ssApi.testConnection(ssDraft);
+      setSsTestState({ status: 'ok', message: `Connected — ${r.carrierCount} carrier(s) available` });
+    } catch (err) {
+      setSsTestState({ status: 'error', message: err.message });
+    }
+  };
+
+  const disconnectShipStation = async () => {
+    if (!window.confirm('Clear ShipStation credentials?')) return;
+    await ssApi.saveConnection({ apiKey: '', apiSecret: '' });
+    setSsDraft({ apiKey: '', apiSecret: '' });
+    setSsTestState({ status: 'idle', message: '' });
+    success('ShipStation disconnected');
+  };
 
   // Authentication (local vs WordPress JWT)
   const [authModeDraft, setAuthModeDraft] = useState('local');
@@ -603,8 +639,19 @@ export default function SettingsModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* WooCommerce */}
+            {/* Integrations group */}
             <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-3">
+                <Plug className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Integrations</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                External services PIMS can talk to. Add credentials per service.
+              </p>
+            </div>
+
+            {/* WooCommerce */}
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-gray-900/30">
               <div className="flex items-center gap-2 mb-1">
                 <ShoppingCart className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">WooCommerce</h3>
@@ -726,6 +773,87 @@ export default function SettingsModal({ isOpen, onClose }) {
                     Clear synced data
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* ShipStation */}
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-gray-900/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Ship className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">ShipStation</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Save your ShipStation API credentials here. Live sync requires a small server-side proxy (planned) because ShipStation does not allow direct browser API calls.
+              </p>
+
+              <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  ShipStation blocks browser-direct API requests (no CORS). Your credentials are saved securely in IndexedDB; PIMS will start pulling/pushing as soon as the proxy is in place.
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={ssDraft.apiKey}
+                    onChange={e => setSsDraft(d => ({ ...d, apiKey: e.target.value }))}
+                    placeholder="ShipStation API key"
+                    className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">API Secret</label>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={ssDraft.apiSecret}
+                    onChange={e => setSsDraft(d => ({ ...d, apiSecret: e.target.value }))}
+                    placeholder="ShipStation API secret"
+                    className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={saveShipStation}
+                    className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={testShipStation}
+                    disabled={!ssDraft.apiKey || !ssDraft.apiSecret || ssTestState.status === 'running'}
+                    className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-md font-medium"
+                    title="Will fail until the proxy is in place — expected today"
+                  >
+                    {ssTestState.status === 'running' ? 'Testing…' : 'Test connection'}
+                  </button>
+                  {ssApi.isConfigured && (
+                    <button
+                      onClick={disconnectShipStation}
+                      className="px-3 py-1.5 text-sm border border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md font-medium"
+                    >
+                      Disconnect
+                    </button>
+                  )}
+                </div>
+
+                {ssTestState.status === 'ok' && (
+                  <div className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-xs text-green-800 dark:text-green-200">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>{ssTestState.message}</div>
+                  </div>
+                )}
+                {ssTestState.status === 'error' && (
+                  <div className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-800 dark:text-red-200">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>{ssTestState.message}</div>
+                  </div>
+                )}
               </div>
             </div>
 
