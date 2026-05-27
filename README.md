@@ -1,5 +1,7 @@
 # PIMS — Peptide Inventory Management System
 
+🔗 **Live site:** [https://nors3ai.github.io/Peptide.Inventory.Management.System/](https://nors3ai.github.io/Peptide.Inventory.Management.System/)
+
 [![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
