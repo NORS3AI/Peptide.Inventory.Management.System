@@ -7,12 +7,11 @@ import { useDarkMode } from './hooks/useDarkMode';
 import { useBranding } from './hooks/useBranding';
 import { useAuth } from './hooks/useAuth';
 import { useWooAutoSync } from './hooks/useWooCommerce';
-import { hasValidSiteSession, hasSitePassword, lockSite } from './lib/sitePassword';
+import { adoptOwnerSession } from './lib/sitePassword';
 import { ToastProvider } from './components/Toast';
 import { db } from './lib/db';
 import Login from './components/Login';
 import SetupWizard from './components/SetupWizard';
-import SitePasswordGate from './components/SitePasswordGate';
 import Accounts from './components/Accounts';
 import ErrorBoundary from './components/ErrorBoundary';
 import CSVUpload from './components/CSVUpload';
@@ -43,29 +42,13 @@ function App() {
   const auth = useAuth();
   useWooAutoSync();
 
-  // Site-password gate (sandbox mode). This replaces the old
-  // WordPress/local login flow — one shared password unlocks the
-  // whole site, then everyone is treated as the owner.
-  const [siteReady, setSiteReady] = useState(false);
-  const [sitePwExists, setSitePwExists] = useState(false);
-  const [siteUnlocked, setSiteUnlocked] = useState(false);
+  // Open sandbox: no password gate. On first load, ensure a single
+  // "owner" account exists and is signed in so the role-gated nav
+  // opens all tabs.
   useEffect(() => {
-    let active = true;
-    async function check() {
-      const exists = await hasSitePassword();
-      const unlocked = exists && hasValidSiteSession();
-      if (!active) return;
-      setSitePwExists(exists);
-      setSiteUnlocked(unlocked);
-      setSiteReady(true);
-    }
-    check();
-    const onChange = () => check();
-    window.addEventListener('site-unlocked', onChange);
-    return () => {
-      active = false;
-      window.removeEventListener('site-unlocked', onChange);
-    };
+    adoptOwnerSession().then(() => {
+      window.dispatchEvent(new Event('auth-changed'));
+    });
   }, []);
   const [orders, setOrders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
@@ -123,7 +106,7 @@ function App() {
     setActiveTab('boxes');
   };
 
-  if (auth.loading || !siteReady) {
+  if (auth.loading) {
     return (
       <ToastProvider>
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500">
@@ -133,21 +116,16 @@ function App() {
     );
   }
 
-  // Sandbox gate: one password unlocks the whole site. If no
-  // password set yet the gate asks the user to set one; otherwise
-  // asks for the existing one.
-  if (!sitePwExists || !siteUnlocked) {
-    return (
-      <ToastProvider>
-        <SitePasswordGate />
-      </ToastProvider>
-    );
-  }
-
   return (
     <ToastProvider>
       <ErrorBoundary label="PIMS">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors overflow-x-hidden">
+      {/* Sandbox banner */}
+      <div className="bg-amber-500 dark:bg-amber-600 text-white text-center text-xs sm:text-sm py-1.5 px-3">
+        <span className="font-semibold uppercase tracking-wider">Sandbox</span>
+        <span className="hidden sm:inline"> · This is a demo instance. Try the <strong>Simulator</strong> under Settings to fill it with sample data.</span>
+        <span className="sm:hidden"> · Demo instance</span>
+      </div>
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -191,14 +169,6 @@ function App() {
                 ) : (
                   <Moon className="w-5 h-5 text-gray-600" />
                 )}
-              </button>
-              <button
-                onClick={() => { if (window.confirm('Lock site? You will need the site password to re-enter.')) lockSite(); }}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Lock site"
-                title="Lock site"
-              >
-                <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <button
                 onClick={() => setShowPatchNotes(true)}

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.186', date: '2026-10-06', title: 'Fully open sandbox: no password gate at all; app loads straight to the dashboard with an owner auto-adopted. New amber "Sandbox" banner at the top; Site Password section removed from Settings (Simulator stays)' },
   { version: '0.0.185', date: '2026-10-06', title: 'Sandbox mode: replaced the WordPress login with a single site-password gate; added a Simulator in Settings that fills every tab with sample data (inventory, batches, boxes, tasks, minutes, snapshots, WC caches). Site password changeable in Settings; lock button in the header' },
   { version: '0.0.184', date: '2026-05-10', title: 'Settings → Integrations group: WooCommerce moved into it; ShipStation added (API key/secret + Test/Save/Disconnect). Live ShipStation sync needs a server-side proxy because they block browser CORS — credentials are saved and ready' },
   { version: '0.0.183', date: '2026-05-10', title: 'Push to WooCommerce: new button syncs PIMS inventory → live WC stock (formula: labeled − reserve, matched by SKU, batch endpoint); confirm dialog; needs a Read/Write API key' },
