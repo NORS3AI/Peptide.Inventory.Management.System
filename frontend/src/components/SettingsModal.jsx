@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck, Plug, Ship, Beaker } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, Plug, Ship, Beaker } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
 import { useWooCommerce } from '../hooks/useWooCommerce';
 import { useShipStation } from '../hooks/useShipStation';
-import { getAuthMode, setAuthMode, getWpAuthConfig, setWpAuthConfig } from '../hooks/useAuth';
-import { wpGetToken } from '../lib/wpAuth';
-import { changeSitePassword } from '../lib/sitePassword';
 import { runSimulator, clearSimulatedData } from '../lib/simulator';
 
 const MAX_IMAGE_BYTES = 1024 * 1024; // 1 MB cap on logo/icon uploads
@@ -76,28 +73,6 @@ export default function SettingsModal({ isOpen, onClose }) {
     success('ShipStation disconnected');
   };
 
-  // Site password change
-  const [sitePwDraft, setSitePwDraft] = useState({ current: '', next: '', confirm: '' });
-  const [sitePwBusy, setSitePwBusy] = useState(false);
-  const saveSitePassword = async () => {
-    if (!sitePwDraft.next || sitePwDraft.next.length < 4) {
-      return showError('New password must be at least 4 characters');
-    }
-    if (sitePwDraft.next !== sitePwDraft.confirm) {
-      return showError('New passwords do not match');
-    }
-    setSitePwBusy(true);
-    try {
-      await changeSitePassword(sitePwDraft.current, sitePwDraft.next);
-      setSitePwDraft({ current: '', next: '', confirm: '' });
-      success('Site password updated');
-    } catch (err) {
-      showError(err.message);
-    } finally {
-      setSitePwBusy(false);
-    }
-  };
-
   // Simulator
   const [simBusy, setSimBusy] = useState(false);
   const handleRunSimulator = async () => {
@@ -122,39 +97,6 @@ export default function SettingsModal({ isOpen, onClose }) {
       showError(`Clear failed: ${err.message}`);
     } finally {
       setSimBusy(false);
-    }
-  };
-
-  // Authentication (local vs WordPress JWT)
-  const [authModeDraft, setAuthModeDraft] = useState('local');
-  const [wpAuthDraft, setWpAuthDraft] = useState({ siteUrl: '', defaultRoleId: 'role_guest' });
-  const [roleOptions, setRoleOptions] = useState([]);
-  const [wpTestState, setWpTestState] = useState({ status: 'idle', message: '' });
-  const [wpTestCreds, setWpTestCreds] = useState({ username: '', password: '' });
-
-  useEffect(() => {
-    if (!isOpen) return;
-    (async () => {
-      setAuthModeDraft(await getAuthMode());
-      setWpAuthDraft(await getWpAuthConfig());
-      setRoleOptions(await db.roles.getAll());
-    })();
-  }, [isOpen]);
-
-  const saveAuthSettings = async () => {
-    await setAuthMode(authModeDraft);
-    await setWpAuthConfig(wpAuthDraft);
-    success('Authentication settings saved');
-  };
-
-  const testWpLogin = async () => {
-    setWpTestState({ status: 'running', message: 'Testing…' });
-    try {
-      if (!wpAuthDraft.siteUrl) throw new Error('Enter the WordPress site URL first');
-      const r = await wpGetToken(wpAuthDraft.siteUrl, wpTestCreds.username, wpTestCreds.password);
-      setWpTestState({ status: 'ok', message: `Authenticated as ${r.userDisplayName || r.userNicename}` });
-    } catch (err) {
-      setWpTestState({ status: 'error', message: err.message });
     }
   };
 

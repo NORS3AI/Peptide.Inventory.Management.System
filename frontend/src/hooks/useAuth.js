@@ -2,50 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { db } from '../lib/db';
 import { hashPassword, verifyPassword, generateUserId } from '../lib/auth';
 import { DEFAULT_ROLES, emptyPermissions } from '../lib/permissions';
-import { wpGetToken, wpValidateToken, wpGetMe, wpListUsers } from '../lib/wpAuth';
 
 const SESSION_KEY = 'pims_session';
-const WP_TOKEN_KEY = 'pims_wp_token';
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
-
-const AUTH_MODE_KEY = 'authMode';            // 'local' | 'wordpress'
-const WP_AUTH_CONFIG_KEY = 'wpAuthConfig';   // { siteUrl, defaultRoleId }
-
-// Built-in defaults so a fresh browser (no IndexedDB yet) lands on
-// the WordPress login screen instead of the local first-run wizard.
-// A Super Admin can still switch to local mode in Settings.
-// Sandbox-mode defaults: a shared site password gates access and
-// the single owner uses the local accounts system. WordPress JWT
-// code paths remain in the module but are no longer the default.
-const DEFAULT_AUTH_MODE = 'local';
-const DEFAULT_WP_SITE_URL = '';
-const DEFAULT_WP_ROLE_ID = 'role_guest';
-
-export async function getAuthMode() {
-  const m = await db.settings.get(AUTH_MODE_KEY);
-  if (m === 'wordpress' || m === 'local') return m;
-  return DEFAULT_AUTH_MODE;
-}
-
-export async function getWpAuthConfig() {
-  const c = await db.settings.get(WP_AUTH_CONFIG_KEY);
-  return {
-    siteUrl: DEFAULT_WP_SITE_URL,
-    defaultRoleId: DEFAULT_WP_ROLE_ID,
-    ...(c || {}),
-  };
-}
-
-export async function setAuthMode(mode) {
-  await db.settings.set(AUTH_MODE_KEY, mode === 'wordpress' ? 'wordpress' : 'local');
-}
-
-export async function setWpAuthConfig(patch) {
-  const current = await getWpAuthConfig();
-  const next = { ...current, ...patch };
-  await db.settings.set(WP_AUTH_CONFIG_KEY, next);
-  return next;
-}
 
 function readSession() {
   try {
@@ -71,11 +30,6 @@ function writeSession(userId) {
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(WP_TOKEN_KEY);
-}
-
-export function getWpToken() {
-  return localStorage.getItem(WP_TOKEN_KEY) || null;
 }
 
 async function ensureDefaultRoles() {
@@ -86,9 +40,37 @@ async function ensureDefaultRoles() {
   }
 }
 
+/**
+ * Sandbox mode: ensure a single super-admin "owner" user exists
+ * and is signed in. Called from App on first load so the role-
+ * gated nav opens every tab without a login flow.
+ */
+export async function adoptOwnerSession() {
+  await ensureDefaultRoles();
+  const all = await db.users.getAll();
+  let owner = all.find(u => u.roleId === 'role_super_admin') || all[0];
+  if (!owner) {
+    const id = generateUserId();
+    owner = {
+      id,
+      username: 'owner',
+      email: '',
+      firstName: 'Sandbox',
+      lastName: 'Owner',
+      phone: '',
+      roleId: 'role_super_admin',
+      source: 'local',
+      createdAt: new Date().toISOString(),
+    };
+    await db.users.set(id, owner);
+  }
+  writeSession(owner.id);
+  return owner;
+}
+
 export async function createSuperAdmin({ username, password, email, firstName = '', lastName = '', phone = '' }) {
   await ensureDefaultRoles();
-  const passwordHash = await hashPassword(password);
+  const passwordHash = password ? await hashPassword(password) : null;
   const id = generateUserId();
   const user = {
     id,
@@ -106,97 +88,19 @@ export async function createSuperAdmin({ username, password, email, firstName = 
   return user;
 }
 
-/**
- * Find or create the local mirror record for a WordPress user.
- * The first WP user ever to log in becomes Super Admin; subsequent
- * users get the configured default role and can be re-assigned in
- * Accounts by a Super Admin.
- */
-async function upsertWpUser({ username, email, displayName, wpRoles }) {
-  await ensureDefaultRoles();
-  const existing = await db.users.findByUsername(username);
-  if (existing) {
-    const patched = {
-      ...existing,
-      email: email || existing.email,
-      wpRoles: wpRoles || existing.wpRoles || [],
-      lastLoginAt: new Date().toISOString(),
-    };
-    await db.users.set(existing.id, patched);
-    return patched;
-  }
-  const totalUsers = await db.users.count();
-  const cfg = await getWpAuthConfig();
-  const roleId = totalUsers === 0 ? 'role_super_admin' : (cfg.defaultRoleId || 'role_guest');
-  const id = generateUserId();
-  const [firstName, ...rest] = (displayName || username).split(' ');
-  const user = {
-    id,
-    username: username.trim(),
-    email: (email || '').trim(),
-    firstName: (firstName || '').trim(),
-    lastName: rest.join(' ').trim(),
-    phone: '',
-    roleId,
-    source: 'wordpress',
-    wpRoles: wpRoles || [],
-    createdAt: new Date().toISOString(),
-    lastLoginAt: new Date().toISOString(),
-  };
-  await db.users.set(id, user);
-  return user;
-}
-
 export function useAuth() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
   const [hasUsers, setHasUsers] = useState(false);
-  const [authMode, setAuthModeState] = useState(DEFAULT_AUTH_MODE);
-  const [wpConfig, setWpConfig] = useState({ siteUrl: DEFAULT_WP_SITE_URL, defaultRoleId: DEFAULT_WP_ROLE_ID });
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       await ensureDefaultRoles();
-      const mode = await getAuthMode();
-      const cfg = await getWpAuthConfig();
-      setAuthModeState(mode);
-      setWpConfig(cfg);
-
       const userCount = await db.users.count();
       setHasUsers(userCount > 0);
 
-      if (mode === 'wordpress') {
-        const token = getWpToken();
-        if (!token || !cfg.siteUrl) {
-          setCurrentUser(null);
-          setCurrentRole(null);
-          return;
-        }
-        const valid = await wpValidateToken(cfg.siteUrl, token);
-        if (!valid) {
-          clearSession();
-          setCurrentUser(null);
-          setCurrentRole(null);
-          return;
-        }
-        const session = readSession();
-        const user = session ? await db.users.get(session.userId) : null;
-        if (!user) {
-          // Token is valid but local link missing — force re-login.
-          clearSession();
-          setCurrentUser(null);
-          setCurrentRole(null);
-          return;
-        }
-        const role = user.roleId ? await db.roles.get(user.roleId) : null;
-        setCurrentUser(user);
-        setCurrentRole(role);
-        return;
-      }
-
-      // Local mode
       const session = readSession();
       if (!session) {
         setCurrentUser(null);
@@ -226,28 +130,6 @@ export function useAuth() {
   }, [refresh]);
 
   const login = useCallback(async (username, password) => {
-    const mode = await getAuthMode();
-    if (mode === 'wordpress') {
-      const cfg = await getWpAuthConfig();
-      if (!cfg.siteUrl) throw new Error('WordPress site URL is not configured (Settings → Authentication)');
-      const { token, userEmail, userDisplayName, userNicename } = await wpGetToken(cfg.siteUrl, username, password);
-      localStorage.setItem(WP_TOKEN_KEY, token);
-      let wpRoles = [];
-      try {
-        const me = await wpGetMe(cfg.siteUrl, token);
-        if (me?.roles) wpRoles = me.roles;
-      } catch { /* profile fetch optional */ }
-      const user = await upsertWpUser({
-        username: userNicename || username,
-        email: userEmail,
-        displayName: userDisplayName,
-        wpRoles,
-      });
-      writeSession(user.id);
-      window.dispatchEvent(new Event('auth-changed'));
-      return user;
-    }
-
     const user = await db.users.findByUsername(username);
     if (!user) throw new Error('Username not found');
     const ok = await verifyPassword(password, user.passwordHash);
@@ -271,72 +153,13 @@ export function useAuth() {
   const canManageUsers = Boolean(currentRole?.canManageUsers);
   const canManageRoles = Boolean(currentRole?.canManageRoles);
 
+  // authMode is retained for legacy consumers; always 'local' now.
   return {
     currentUser, currentRole, hasUsers, loading, permissions,
-    authMode, wpConfig,
+    authMode: 'local',
     login, logout, refresh, can,
     isSuperAdmin, canManageUsers, canManageRoles,
   };
-}
-
-/**
- * Pull the WordPress user directory and mirror it into PIMS so a
- * Super Admin can assign PIMS roles before people log in. Existing
- * role assignments are preserved; new users get the configured
- * default role. By default WooCommerce buyers (users whose only WP
- * role is "customer") are skipped to keep Accounts focused on staff.
- */
-export async function syncWordPressUsers({ includeCustomers = false } = {}) {
-  const mode = await getAuthMode();
-  if (mode !== 'wordpress') throw new Error('Switch Authentication to WordPress mode first');
-  const cfg = await getWpAuthConfig();
-  if (!cfg.siteUrl) throw new Error('WordPress site URL is not configured');
-  const token = getWpToken();
-  if (!token) throw new Error('Not signed in to WordPress');
-
-  await ensureDefaultRoles();
-  const wpUsers = await wpListUsers(cfg.siteUrl, token);
-  let imported = 0;
-  let updated = 0;
-  let skipped = 0;
-
-  for (const wu of wpUsers) {
-    const roles = wu.roles || [];
-    const onlyCustomer = roles.length > 0 && roles.every(r => r === 'customer');
-    if (onlyCustomer && !includeCustomers) { skipped += 1; continue; }
-
-    const username = wu.slug || wu.name;
-    const existing = await db.users.findByUsername(username);
-    if (existing) {
-      await db.users.set(existing.id, {
-        ...existing,
-        email: wu.email || existing.email,
-        wpRoles: roles,
-        source: 'wordpress',
-      });
-      updated += 1;
-      continue;
-    }
-    const totalUsers = await db.users.count();
-    const roleId = totalUsers === 0 ? 'role_super_admin' : (cfg.defaultRoleId || 'role_guest');
-    const id = generateUserId();
-    const [firstName, ...rest] = (wu.name || username).split(' ');
-    await db.users.set(id, {
-      id,
-      username,
-      email: wu.email || '',
-      firstName: (firstName || '').trim(),
-      lastName: rest.join(' ').trim(),
-      phone: '',
-      roleId,
-      source: 'wordpress',
-      wpRoles: roles,
-      createdAt: new Date().toISOString(),
-    });
-    imported += 1;
-  }
-  window.dispatchEvent(new Event('auth-changed'));
-  return { imported, updated, skipped, total: wpUsers.length };
 }
 
 export async function setUserPassword(userId, newPassword) {

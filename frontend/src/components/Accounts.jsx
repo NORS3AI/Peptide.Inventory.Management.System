@@ -3,7 +3,7 @@ import { Users, Plus, Trash2, Edit, Save, X, Shield, KeyRound, Lock, Unlock, Rot
 import { db } from '../lib/db';
 import { TABS, emptyPermissions } from '../lib/permissions';
 import { useToast } from './Toast';
-import { useAuth, createUser, updateUser, syncWordPressUsers } from '../hooks/useAuth';
+import { useAuth, createUser, updateUser } from '../hooks/useAuth';
 import { generateRoleId } from '../lib/auth';
 
 const ACCOUNT_TABS = [
@@ -19,7 +19,7 @@ export async function isAccountCreationEnabled() {
 }
 
 export default function Accounts() {
-  const { currentUser, canManageUsers, canManageRoles, refresh, isSuperAdmin, authMode } = useAuth();
+  const { currentUser, canManageUsers, canManageRoles, refresh, isSuperAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -81,7 +81,6 @@ export default function Accounts() {
           currentUser={currentUser}
           creationEnabled={creationEnabled}
           isSuperAdmin={isSuperAdmin}
-          authMode={authMode}
           onToggleCreation={async (next) => {
             await db.settings.set(CREATION_ENABLED_KEY, next);
             setCreationEnabled(next);
@@ -107,27 +106,12 @@ function RoleBadge({ role }) {
   );
 }
 
-function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnabled, isSuperAdmin, onToggleCreation, authMode }) {
+function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnabled, isSuperAdmin, onToggleCreation }) {
   const { success, error: showError } = useToast();
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [pwResetFor, setPwResetFor] = useState(null);
-  const [wpSyncing, setWpSyncing] = useState(false);
-  const [includeCustomers, setIncludeCustomers] = useState(false);
-  const isWordPress = authMode === 'wordpress';
-
-  const handleWpSync = async () => {
-    setWpSyncing(true);
-    try {
-      const r = await syncWordPressUsers({ includeCustomers });
-      success(`WordPress users synced — ${r.imported} new, ${r.updated} updated${r.skipped ? `, ${r.skipped} customer(s) skipped` : ''}`);
-      await reload();
-    } catch (err) {
-      showError(err.message);
-    } finally {
-      setWpSyncing(false);
-    }
-  };
+  const isWordPress = false; // WordPress mode has been removed; keep var for the single reference below.
 
   const blank = {
     username: '', password: '', email: '', firstName: '', lastName: '',
@@ -189,33 +173,7 @@ function UsersPanel({ users, rolesById, roles, reload, currentUser, creationEnab
 
   return (
     <div className="space-y-3">
-      {/* WordPress mode: accounts come from WP, not the local creation flow */}
-      {isWordPress && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <div className="text-sm">
-            <div className="font-medium text-gray-900 dark:text-white">Accounts are managed in WordPress</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              Sync the WordPress user directory, then assign PIMS roles here. WooCommerce customers are skipped unless you opt in.
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
-              <input type="checkbox" checked={includeCustomers} onChange={e => setIncludeCustomers(e.target.checked)} />
-              Include customers
-            </label>
-            <button
-              onClick={handleWpSync}
-              disabled={wpSyncing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md text-sm font-medium"
-            >
-              <RotateCcw className={`w-4 h-4 ${wpSyncing ? 'animate-spin' : ''}`} />
-              {wpSyncing ? 'Syncing…' : 'Sync WordPress Users'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Local mode: account creation lock */}
+      {/* Account creation lock */}
       {!isWordPress && (
         <div className={`flex items-center justify-between p-3 rounded-lg border ${
           creationEnabled
