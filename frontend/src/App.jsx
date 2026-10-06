@@ -263,7 +263,7 @@ function App() {
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            © 2026 Peptide Inventory Management System.
+            © 2026 Power Inventory Management System.
           </p>
         </div>
       </footer>
@@ -614,15 +614,15 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <StatCard
-          title="Total Peptides"
+          title="Total Inventory"
           value={stats.total.toString()}
-          subtitle="In system"
+          subtitle={`${stats.total} item${stats.total === 1 ? '' : 's'} tracked`}
           icon={<Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />}
         />
         <StatCard
           title="Need Ordering"
           value={stats.needsOrdering.toString()}
-          subtitle="Requires attention"
+          subtitle={`${stats.needsOrdering} of ${stats.total} require attention`}
           icon={<Package className="w-8 h-8 text-orange-600 dark:text-orange-400" />}
         />
       </div>
@@ -900,7 +900,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">Getting Started</h3>
           <p className="text-blue-800 dark:text-blue-300 mb-4">
-            Welcome to the Peptide Inventory System! To get started:
+            Welcome to the Power Inventory Management System! To get started:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-300">
             <li>Import your inventory CSV file using the "Import CSV" tab</li>

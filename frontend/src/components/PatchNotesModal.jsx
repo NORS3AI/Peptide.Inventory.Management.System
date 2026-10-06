@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.188', date: '2026-10-06', title: 'Rebrand to Power Inventory Management System; Dashboard "Total Peptides" is now "Total Inventory" with correlated counts; Simulator now seeds 25 products across every stock status (out/nearly/low/good/on-order), plus Prices data, demo accounts (admin/manager/customer/guest), and more orders/tasks' },
   { version: '0.0.187', date: '2026-10-06', title: 'Rip out WordPress / password code for real: delete Login, SetupWizard, SitePasswordGate, wpAuth, and sitePassword files; strip Authentication section from Settings; useAuth is now a slim local-only hook with adoptOwnerSession' },
   { version: '0.0.186', date: '2026-10-06', title: 'Fully open sandbox: no password gate at all; app loads straight to the dashboard with an owner auto-adopted. New amber "Sandbox" banner at the top; Site Password section removed from Settings (Simulator stays)' },
   { version: '0.0.185', date: '2026-10-06', title: 'Sandbox mode: replaced the WordPress login with a single site-password gate; added a Simulator in Settings that fills every tab with sample data (inventory, batches, boxes, tasks, minutes, snapshots, WC caches). Site password changeable in Settings; lock button in the header' },

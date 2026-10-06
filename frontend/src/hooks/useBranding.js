@@ -3,8 +3,8 @@ import { db } from '../lib/db';
 
 export const DEFAULT_BRANDING = {
   appTitle: 'PIMS',
-  appSubtitle: 'Peptide Inventory Management System',
-  browserTitle: 'PIMS — Peptide Inventory Management System',
+  appSubtitle: 'Power Inventory Management System',
+  browserTitle: 'PIMS — Power Inventory Management System',
   appLogo: '',
   browserIcon: '',
 };
