@@ -7,10 +7,12 @@ import { useDarkMode } from './hooks/useDarkMode';
 import { useBranding } from './hooks/useBranding';
 import { useAuth } from './hooks/useAuth';
 import { useWooAutoSync } from './hooks/useWooCommerce';
+import { hasValidSiteSession, hasSitePassword, lockSite } from './lib/sitePassword';
 import { ToastProvider } from './components/Toast';
 import { db } from './lib/db';
 import Login from './components/Login';
 import SetupWizard from './components/SetupWizard';
+import SitePasswordGate from './components/SitePasswordGate';
 import Accounts from './components/Accounts';
 import ErrorBoundary from './components/ErrorBoundary';
 import CSVUpload from './components/CSVUpload';
@@ -40,6 +42,31 @@ function App() {
   const { branding } = useBranding();
   const auth = useAuth();
   useWooAutoSync();
+
+  // Site-password gate (sandbox mode). This replaces the old
+  // WordPress/local login flow — one shared password unlocks the
+  // whole site, then everyone is treated as the owner.
+  const [siteReady, setSiteReady] = useState(false);
+  const [sitePwExists, setSitePwExists] = useState(false);
+  const [siteUnlocked, setSiteUnlocked] = useState(false);
+  useEffect(() => {
+    let active = true;
+    async function check() {
+      const exists = await hasSitePassword();
+      const unlocked = exists && hasValidSiteSession();
+      if (!active) return;
+      setSitePwExists(exists);
+      setSiteUnlocked(unlocked);
+      setSiteReady(true);
+    }
+    check();
+    const onChange = () => check();
+    window.addEventListener('site-unlocked', onChange);
+    return () => {
+      active = false;
+      window.removeEventListener('site-unlocked', onChange);
+    };
+  }, []);
   const [orders, setOrders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showPatchNotes, setShowPatchNotes] = useState(false);
@@ -96,7 +123,7 @@ function App() {
     setActiveTab('boxes');
   };
 
-  if (auth.loading) {
+  if (auth.loading || !siteReady) {
     return (
       <ToastProvider>
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500">
@@ -106,20 +133,13 @@ function App() {
     );
   }
 
-  // Local mode shows the first-run wizard; WordPress mode never does
-  // (accounts live in WordPress — just show the login screen).
-  if (auth.authMode !== 'wordpress' && !auth.hasUsers) {
+  // Sandbox gate: one password unlocks the whole site. If no
+  // password set yet the gate asks the user to set one; otherwise
+  // asks for the existing one.
+  if (!sitePwExists || !siteUnlocked) {
     return (
       <ToastProvider>
-        <SetupWizard />
-      </ToastProvider>
-    );
-  }
-
-  if (!auth.currentUser) {
-    return (
-      <ToastProvider>
-        <Login />
+        <SitePasswordGate />
       </ToastProvider>
     );
   }
@@ -173,10 +193,10 @@ function App() {
                 )}
               </button>
               <button
-                onClick={() => { if (window.confirm('Sign out?')) auth.logout(); }}
+                onClick={() => { if (window.confirm('Lock site? You will need the site password to re-enter.')) lockSite(); }}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Sign out"
-                title="Sign out"
+                aria-label="Lock site"
+                title="Lock site"
               >
                 <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>

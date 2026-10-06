@@ -14,8 +14,11 @@ const WP_AUTH_CONFIG_KEY = 'wpAuthConfig';   // { siteUrl, defaultRoleId }
 // Built-in defaults so a fresh browser (no IndexedDB yet) lands on
 // the WordPress login screen instead of the local first-run wizard.
 // A Super Admin can still switch to local mode in Settings.
-const DEFAULT_AUTH_MODE = 'wordpress';
-const DEFAULT_WP_SITE_URL = 'https://superstitionresearch.com';
+// Sandbox-mode defaults: a shared site password gates access and
+// the single owner uses the local accounts system. WordPress JWT
+// code paths remain in the module but are no longer the default.
+const DEFAULT_AUTH_MODE = 'local';
+const DEFAULT_WP_SITE_URL = '';
 const DEFAULT_WP_ROLE_ID = 'role_guest';
 
 export async function getAuthMode() {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck, Plug, Ship } from 'lucide-react';
+import { Settings as SettingsIcon, X, Type, Download, Upload, AlertTriangle, Truck, Plus, Trash2, Image as ImageIcon, RotateCcw, ShoppingCart, CheckCircle2, ShieldCheck, Plug, Ship, Beaker } from 'lucide-react';
 import { db } from '../lib/db';
 import { useToast } from './Toast';
 import { useBranding, DEFAULT_BRANDING } from '../hooks/useBranding';
@@ -7,6 +7,8 @@ import { useWooCommerce } from '../hooks/useWooCommerce';
 import { useShipStation } from '../hooks/useShipStation';
 import { getAuthMode, setAuthMode, getWpAuthConfig, setWpAuthConfig } from '../hooks/useAuth';
 import { wpGetToken } from '../lib/wpAuth';
+import { changeSitePassword } from '../lib/sitePassword';
+import { runSimulator, clearSimulatedData } from '../lib/simulator';
 
 const MAX_IMAGE_BYTES = 1024 * 1024; // 1 MB cap on logo/icon uploads
 
@@ -72,6 +74,55 @@ export default function SettingsModal({ isOpen, onClose }) {
     setSsDraft({ apiKey: '', apiSecret: '' });
     setSsTestState({ status: 'idle', message: '' });
     success('ShipStation disconnected');
+  };
+
+  // Site password change
+  const [sitePwDraft, setSitePwDraft] = useState({ current: '', next: '', confirm: '' });
+  const [sitePwBusy, setSitePwBusy] = useState(false);
+  const saveSitePassword = async () => {
+    if (!sitePwDraft.next || sitePwDraft.next.length < 4) {
+      return showError('New password must be at least 4 characters');
+    }
+    if (sitePwDraft.next !== sitePwDraft.confirm) {
+      return showError('New passwords do not match');
+    }
+    setSitePwBusy(true);
+    try {
+      await changeSitePassword(sitePwDraft.current, sitePwDraft.next);
+      setSitePwDraft({ current: '', next: '', confirm: '' });
+      success('Site password updated');
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setSitePwBusy(false);
+    }
+  };
+
+  // Simulator
+  const [simBusy, setSimBusy] = useState(false);
+  const handleRunSimulator = async () => {
+    if (!window.confirm('Run the simulator? This replaces current inventory, batches, boxes, tasks, minutes, snapshots, and WooCommerce caches with sample data. Settings and the site password are preserved.')) return;
+    setSimBusy(true);
+    try {
+      await runSimulator();
+      success('Simulator ran — sample data loaded across the app');
+    } catch (err) {
+      showError(`Simulator failed: ${err.message}`);
+    } finally {
+      setSimBusy(false);
+    }
+  };
+  const handleClearSimulated = async () => {
+    if (!window.confirm('Clear simulated data? This wipes inventory, batches, boxes, tasks, minutes, snapshots, and WC caches. Settings, roles, and the site password are preserved.')) return;
+    setSimBusy(true);
+    try {
+      await clearSimulatedData();
+      success('Simulated data cleared');
+    } catch (err) {
+      showError(`Clear failed: ${err.message}`);
+    } finally {
+      setSimBusy(false);
+    }
   };
 
   // Authentication (local vs WordPress JWT)
@@ -531,110 +582,95 @@ export default function SettingsModal({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* Authentication */}
+            {/* Site Password */}
             <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-1">
                 <ShieldCheck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Authentication</h3>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Site Password</h3>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Choose how users sign in. WordPress mode verifies credentials against your site — real, server-side auth.
+                One shared password unlocks this sandbox. Anyone with the password sees everything.
               </p>
 
               <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <label className={`flex-1 border rounded-lg p-3 cursor-pointer ${authModeDraft === 'local' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}>
-                    <input type="radio" name="authMode" className="mr-2" checked={authModeDraft === 'local'} onChange={() => setAuthModeDraft('local')} />
-                    <span className="font-medium text-sm text-gray-900 dark:text-white">Local accounts</span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PIMS-managed accounts in this browser. UX gate only.</p>
-                  </label>
-                  <label className={`flex-1 border rounded-lg p-3 cursor-pointer ${authModeDraft === 'wordpress' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}>
-                    <input type="radio" name="authMode" className="mr-2" checked={authModeDraft === 'wordpress'} onChange={() => setAuthModeDraft('wordpress')} />
-                    <span className="font-medium text-sm text-gray-900 dark:text-white">WordPress (JWT)</span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Verified by your WordPress site. Requires the JWT plugin.</p>
-                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Current password</label>
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={sitePwDraft.current}
+                      onChange={e => setSitePwDraft(d => ({ ...d, current: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={sitePwDraft.next}
+                      onChange={e => setSitePwDraft(d => ({ ...d, next: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm new password</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={sitePwDraft.confirm}
+                      onChange={e => setSitePwDraft(d => ({ ...d, confirm: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
-
-                {authModeDraft === 'wordpress' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">WordPress Site URL</label>
-                      <input
-                        type="url"
-                        value={wpAuthDraft.siteUrl}
-                        onChange={e => setWpAuthDraft(d => ({ ...d, siteUrl: e.target.value }))}
-                        placeholder="https://superstitionresearch.com"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Default role for new WordPress users</label>
-                      <select
-                        value={wpAuthDraft.defaultRoleId}
-                        onChange={e => setWpAuthDraft(d => ({ ...d, defaultRoleId: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      >
-                        {roleOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                      </select>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        The first WordPress user to sign in becomes Super Admin. Everyone after gets this role until a Super Admin changes it in Accounts.
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
-                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Test a WordPress login</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={wpTestCreds.username}
-                          onChange={e => setWpTestCreds(c => ({ ...c, username: e.target.value }))}
-                          placeholder="WP username"
-                          autoComplete="off"
-                          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                        <input
-                          type="password"
-                          value={wpTestCreds.password}
-                          onChange={e => setWpTestCreds(c => ({ ...c, password: e.target.value }))}
-                          placeholder="WP password"
-                          autoComplete="off"
-                          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                      <button
-                        onClick={testWpLogin}
-                        disabled={wpTestState.status === 'running'}
-                        className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-md font-medium"
-                      >
-                        {wpTestState.status === 'running' ? 'Testing…' : 'Test login'}
-                      </button>
-                      {wpTestState.status === 'ok' && (
-                        <div className="flex items-start gap-2 text-xs text-green-700 dark:text-green-300">
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />{wpTestState.message}
-                        </div>
-                      )}
-                      {wpTestState.status === 'error' && (
-                        <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300">
-                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />{wpTestState.message}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <div>
-                        Requires the <strong>JWT Authentication for WP REST API</strong> plugin active on your site, plus
-                        <code className="px-1">JWT_AUTH_SECRET_KEY</code> in wp-config.php. If PIMS is not same-origin with WordPress you also need <code className="px-1">JWT_AUTH_CORS_ENABLE</code> and a CORS allow rule for <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>.
-                      </div>
-                    </div>
-                  </>
-                )}
-
                 <button
-                  onClick={saveAuthSettings}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                  onClick={saveSitePassword}
+                  disabled={sitePwBusy}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-sm font-medium"
                 >
-                  Save Authentication Settings
+                  {sitePwBusy ? 'Saving…' : 'Change Site Password'}
+                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Hashed with PBKDF2-SHA256 (200k iterations) and stored in this browser only. Clearing browser data lets you set a brand-new password.
+                </p>
+              </div>
+            </div>
+
+            {/* Simulator */}
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <Beaker className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Simulator</h3>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Fill every tab with realistic sample data — inventory, batches, boxes, tasks, meeting minutes, snapshots, and WooCommerce orders/products/customers — so you can demo and screenshot PIMS end-to-end.
+              </p>
+
+              <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Run Simulator</strong> replaces your current inventory/batches/boxes/tasks/minutes/snapshots and the WC caches with sample data. Settings, roles, column renames, and the site password are preserved.
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleRunSimulator}
+                  disabled={simBusy}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md font-medium"
+                >
+                  <Beaker className={`w-4 h-4 ${simBusy ? 'animate-pulse' : ''}`} />
+                  {simBusy ? 'Simulating…' : 'Run Simulator'}
+                </button>
+                <button
+                  onClick={handleClearSimulated}
+                  disabled={simBusy}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 rounded-md font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear Simulated Data
                 </button>
               </div>
             </div>
