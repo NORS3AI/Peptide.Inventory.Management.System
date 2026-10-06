@@ -916,7 +916,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
             {stats.needsOrdering > 0 && (
               <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg">
                 <span className="text-orange-900 dark:text-orange-200 font-medium">
-                  {stats.needsOrdering} peptide{stats.needsOrdering !== 1 ? 's' : ''} need ordering
+                  {stats.needsOrdering} item{stats.needsOrdering !== 1 ? 's' : ''} need ordering
                 </span>
                 <button
                   onClick={() => onNavigate('inventory')}
@@ -929,7 +929,7 @@ function DashboardView({ stats, peptides, thresholds, onNavigate }) {
             {stats.needsOrdering === 0 && stats.total > 0 && (
               <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
                 <span className="text-green-900 dark:text-green-200 font-medium">
-                  All peptides have adequate stock levels
+                  All inventory has adequate stock levels
                 </span>
                 <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>

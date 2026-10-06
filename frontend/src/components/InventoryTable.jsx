@@ -516,7 +516,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search peptides..."
+                placeholder="Search inventory..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoComplete="off"
@@ -636,7 +636,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
 
       {/* Results Count */}
       <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-        <span>Showing {sortedPeptides.length} of {peptides.length} peptides</span>
+        <span>Showing {sortedPeptides.length} of {peptides.length} items</span>
       </div>
 
       {/* Table */}
@@ -732,7 +732,7 @@ export default function InventoryTable({ peptides, allPeptides, onRefresh, thres
 
         {sortedPeptides.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No peptides match your search criteria</p>
+            <p className="text-gray-500">No items match your search criteria</p>
           </div>
         )}
       </div>

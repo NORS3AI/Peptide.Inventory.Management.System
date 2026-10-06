@@ -378,7 +378,7 @@ export default function CSVUpload({ onImportComplete }) {
               <h3 className="text-sm font-medium text-green-900 dark:text-green-200">Import Successful!</h3>
               <div className="mt-2 text-sm text-green-800 dark:text-green-300">
                 {result.mode === 'replace' ? (
-                  <p>Replaced all inventory with <strong>{result.imported}</strong> peptides.</p>
+                  <p>Replaced all inventory with <strong>{result.imported}</strong> items.</p>
                 ) : (
                   <>
                     <p>

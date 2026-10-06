@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X, Sparkles, Bug, Wrench, Rocket, Layers, Shield, Palette, Zap } from 'lucide-react';
 
 const PATCH_NOTES = [
+  { version: '0.0.189', date: '2026-10-06', title: 'Audit sweep: fixed remaining user-facing "peptide" copy (Inventory search placeholder + status line, Sales Ready search, CSV import toast, Labeling toast, Order Management copy, Patch Notes footer, Dashboard "items need ordering")' },
   { version: '0.0.188', date: '2026-10-06', title: 'Rebrand to Power Inventory Management System; Dashboard "Total Peptides" is now "Total Inventory" with correlated counts; Simulator now seeds 25 products across every stock status (out/nearly/low/good/on-order), plus Prices data, demo accounts (admin/manager/customer/guest), and more orders/tasks' },
   { version: '0.0.187', date: '2026-10-06', title: 'Rip out WordPress / password code for real: delete Login, SetupWizard, SitePasswordGate, wpAuth, and sitePassword files; strip Authentication section from Settings; useAuth is now a slim local-only hook with adoptOwnerSession' },
   { version: '0.0.186', date: '2026-10-06', title: 'Fully open sandbox: no password gate at all; app loads straight to the dashboard with an owner auto-adopted. New amber "Sandbox" banner at the top; Site Password section removed from Settings (Simulator stays)' },
@@ -363,7 +364,7 @@ export default function PatchNotesModal({ isOpen, onClose, currentVersion }) {
           <div className="text-center py-6 border-t border-gray-200 dark:border-gray-700">
             <div className="inline-flex items-center gap-2 text-sm text-gray-400 dark:text-gray-600">
               <Rocket className="w-4 h-4" />
-              <span>Peptide Inventory System - Born Feb 6, 2026</span>
+              <span>Power Inventory Management System - Born Feb 6, 2026</span>
             </div>
           </div>
         </div>

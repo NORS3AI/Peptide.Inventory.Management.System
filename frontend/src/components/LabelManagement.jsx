@@ -173,7 +173,7 @@ export default function LabelManagement({ peptides, onRefresh }) {
 
       success(`${peptide.peptideId} labeled (${newLabeledCount}/${quantity})`);
     } catch (err) {
-      showError('Failed to mark peptide as labeled');
+      showError('Failed to mark item as labeled');
     }
   };
 

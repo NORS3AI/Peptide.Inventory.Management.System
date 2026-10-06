@@ -211,7 +211,7 @@ export default function OrderManagement({ peptide, onClose, onUpdate }) {
           {/* Place Order */}
           {activeTab === 'place-order' && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Record when you place an order for this peptide</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Record when you place an order for this item</p>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -399,7 +399,7 @@ export default function OrderManagement({ peptide, onClose, onUpdate }) {
 
               <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  ✓ After recording results with purity and net weight, this peptide can be marked as ready for sale (pending labeling).
+                  ✓ After recording results with purity and net weight, this item can be marked as ready for sale (pending labeling).
                 </p>
               </div>
 
